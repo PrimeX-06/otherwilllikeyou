@@ -42,6 +42,7 @@
 需要 Node.js 和本机 Chrome（Playwright 使用 `channel: 'chrome'`）。第一次跑测试前先安装依赖：
 
 ```bash
+# 在仓库根目录
 cd game/dust-corridor
 npm install
 node tools/story-chain-check.mjs     # 第一幕 → 学校线 → 靠栏杆 CG 的整条流程
@@ -51,7 +52,7 @@ node tools/act2-ui-check.mjs         # 两幕共用的 E / Esc / R
 node tools/ui-parity-probe.mjs       # 两幕界面并排截图
 ```
 
-黑板报与广播各自还有自检：
+黑板报与广播各自还有自检（回到仓库根目录）：
 
 ```bash
 node act2/tools/check.cjs
