@@ -2,6 +2,8 @@
 
 [简体中文](README.md) · **English**
 
+**▶ Play online · [otherwilllikeyou.vercel.app](https://otherwilllikeyou.vercel.app/)**
+
 A non-commercial, fan-made pixel romance story. Act 1 is a phone shooter played in a
 hallway and a bedroom; the screen then hands over to the school arc: the corridor, the
 blackboard, the broadcast room, the evening broadcast, and finally a CG by the white

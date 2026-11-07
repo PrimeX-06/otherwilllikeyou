@@ -2,6 +2,8 @@
 
 **简体中文** · [English](README.en.md)
 
+**▶ 在线游玩 · [otherwilllikeyou.vercel.app](https://otherwilllikeyou.vercel.app/)**
+
 一个非商业的同人向像素恋爱故事。第一幕是楼道与房间里的手机射击小游戏，之后画面交给学校线：
 走廊、黑板报、广播室、晚间广播，最后停在放学后白色护栏旁的一张 CG。
 
