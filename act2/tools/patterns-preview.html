@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>图案预览</title>
+<style>
+  body { margin: 0; padding: 18px; background: #14121a; color: #f2e9da;
+         font: 13px/1.4 "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+  h1 { font-size: 14px; font-weight: 500; letter-spacing: .16em; opacity: .6; margin: 0 0 14px; }
+  #grid { display: flex; flex-wrap: wrap; gap: 14px; }
+  figure { margin: 0; text-align: center; }
+  canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges;
+           background: #48645a; border: 1px solid rgba(242,233,218,.16); }
+  figcaption { margin-top: 5px; font-size: 11px; color: rgba(242,233,218,.55); letter-spacing: .08em; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
+</style>
+</head>
+<body>
+<h1>预设图案 · 6 倍放大（黑板绿底）</h1>
+<div id="grid"></div>
+
+<script src="../patterns.js"></script>
+<script>
+  const K = 6;
+  const grid = document.getElementById('grid');
+  const PATS = window.ACT2.Patterns;
+
+  function cell(pat, color, k, label) {
+    const fig = document.createElement('figure');
+    const cv = document.createElement('canvas');
+    cv.width = pat.size * k;
+    cv.height = pat.size * k;
+    const g = cv.getContext('2d');
+    // 先铺一层黑板绿，再画：评估的是「贴到板上长什么样」
+    g.fillStyle = '#48645a';
+    g.fillRect(0, 0, cv.width, cv.height);
+    PATS.draw(g, pat, 0, 0, color, k, { alpha: 0.94, grain: 0.08 });
+    fig.append(cv);
+    if (label) {
+      const cap = document.createElement('figcaption');
+      cap.textContent = label;
+      fig.append(cap);
+    }
+    return fig;
+  }
+
+  PATS.PATTERNS.forEach((p) => {
+    const fig = cell(p, '#f4ecdd', K, p.name + ' · ' + p.cat + ' · ' + p.size);
+    grid.append(fig);
+  });
+
+  // 第二组：同一个图案换粉笔色，检查暗调/亮调是不是还分得开
+  const row = document.createElement('div');
+  row.className = 'row';
+  ['#f4ecdd', '#f6db9e', '#efaab4', '#9acbdf', '#c9d8b8'].forEach((c) => {
+    const p = PATS.BY_ID.flower;
+    row.append(cell(p, c, K, c));
+  });
+  document.body.append(row);
+</script>
+</body>
+</html>

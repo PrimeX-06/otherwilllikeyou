@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>放学后 · 白色护栏</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="stage" aria-label="晚间广播后的走廊">
+    <canvas id="scene" width="512" height="288" aria-label="教学楼走廊"></canvas>
+    <img id="cg" alt="" hidden>
+    <div id="fade"></div>
+    <div id="chapter">放学后 / 白色护栏</div>
+    <div id="caption" hidden><b id="captionWho"></b><span id="captionLine"></span><small>E / Enter / 点击继续 · 也会自动继续</small></div>
+    <div id="dialog" hidden><b id="who"></b><p id="line"></p><small>E</small></div>
+    <div id="controls" hidden>
+      <button id="auto" type="button">继续往前走</button>
+      <button id="inspect" type="button" hidden>看看教室</button>
+    </div>
+    <div id="narration" hidden><b>旁白</b><p id="hint"></p><small>A / ← 行走 · E 互动 · 也可点右上角按钮</small></div>
+    <div id="ending" hidden>
+      <h1>那条走廊</h1>
+      <p>广播结束后，我们绕了远路。走到楼梯口时，谁也没急着下去。</p>
+      <div class="actions">
+        <button id="replay" type="button">再走一次</button>
+        <a href="../../act3/broadcast.html">返回晚间广播</a>
+      </div>
+    </div>
+  </main>
+  <script src="scene.js"></script>
+</body>
+</html>

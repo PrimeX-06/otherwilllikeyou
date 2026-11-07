@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第二幕 · 一起完成的黑板报</title>
+<link rel="stylesheet" href="board.css">
+</head>
+<body>
+<div id="stage" class="cinematic">
+  <div id="frame">
+    <div id="screen">
+      <canvas id="game" width="512" height="288"></canvas>
+
+      <div id="prog">
+        <span data-k="title">标题</span>
+        <span data-k="frame">边框</span>
+        <span data-k="main">主图</span>
+        <span data-k="deco">装饰</span>
+      </div>
+
+      <div id="dlg">
+        <b id="dlgWho"></b>
+        <p id="dlgLine"></p>
+        <small>E</small>
+      </div>
+
+      <!-- 随时能走：画板期间一直在左上角，Esc 同效 -->
+      <button id="leave" title="离开黑板（Esc）">离开</button>
+
+      <div id="bye">
+        <h2>先到这儿</h2>
+        <p id="byeLine"></p>
+        <p class="note">这张板已经存好了，下次进来接着画。</p>
+        <div class="row">
+          <button id="resume">接着画</button>
+          <button id="nextBroadcast">先去广播室</button>
+          <button id="quit">离开</button>
+        </div>
+      </div>
+
+      <div id="card">
+        <h2>第二幕 · 一起完成的黑板报</h2>
+        <p>这张图是你和她一起画的。</p>
+        <div class="row">
+          <a id="download" download="黑板报.png">下载这张 PNG</a>
+          <button id="look">看看</button>
+          <button id="again">再画一次</button>
+          <button id="nextBroadcastDone">继续 · 广播室</button>
+          <button id="out">离开</button>
+        </div>
+      </div>
+
+      <input id="textin" type="text" maxlength="12" placeholder="写标题，回车确认" autocomplete="off">
+
+      <div id="loading" class="show">加载中…</div>
+    </div>
+  </div>
+
+  <div id="pats"></div>
+
+  <!-- 画板期间的对白走这里：左边朱里、右边和臣，中间一个对话框。
+       整条在画布**下面**，不压黑板——这块板才是玩家要看的东西。 -->
+  <div id="subs" data-who="朱里">
+    <div class="pix her" aria-hidden="true"><i></i></div>
+    <div class="bubble">
+      <b id="subsWho"></b>
+      <span id="subsLine"></span>
+    </div>
+    <div class="pix me" aria-hidden="true"><i></i></div>
+  </div>
+
+  <div id="bar">
+    <div id="tools"></div>
+    <div id="widths"></div>
+    <div id="status">
+      <span id="hint"></span>
+    </div>
+    <div id="palette"></div>
+    <button id="finish" disabled>完成黑板报</button>
+  </div>
+</div>
+
+<script src="lines.js"></script>
+<script src="patterns.js"></script>
+<script src="ghost-art.js"></script>
+<script src="board.js"></script>
+<script src="girl.js"></script>
+<script src="scene2.js"></script>
+</body>
+</html>

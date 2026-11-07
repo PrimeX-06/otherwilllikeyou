@@ -1,0 +1,21 @@
+/* ---------------------------------------------------------------------------
+   Full-frame cut-ins. The still covers the HUD; the subtitle stays above it,
+   because the line is spoken while the phone changes hands.
+--------------------------------------------------------------------------- */
+
+#cg-cut {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 52%;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 380ms ease;
+  z-index: 7;
+  image-rendering: auto;
+}
+
+#cg-cut.show { opacity: 1; }

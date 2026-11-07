@@ -1,0 +1,12 @@
+node_modules
+# The published story is played straight from file://, so the built bundle is
+# committed instead of being ignored.
+test-results
+playwright-report
+
+# development scratch: screenshots and reference frames
+shots
+ref
+
+test-run.log
+cursor-guard.log

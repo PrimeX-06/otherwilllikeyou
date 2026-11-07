@@ -1,0 +1,49 @@
+{ "frames": [
+   {
+    "filename": "door302 0.aseprite",
+    "frame": { "x": 0, "y": 0, "w": 64, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 128 },
+    "sourceSize": { "w": 64, "h": 128 },
+    "duration": 200
+   },
+   {
+    "filename": "door302 1.aseprite",
+    "frame": { "x": 64, "y": 0, "w": 64, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 128 },
+    "sourceSize": { "w": 64, "h": 128 },
+    "duration": 200
+   },
+   {
+    "filename": "door302 2.aseprite",
+    "frame": { "x": 128, "y": 0, "w": 64, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 128 },
+    "sourceSize": { "w": 64, "h": 128 },
+    "duration": 200
+   },
+   {
+    "filename": "door302 3.aseprite",
+    "frame": { "x": 192, "y": 0, "w": 64, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 128 },
+    "sourceSize": { "w": 64, "h": 128 },
+    "duration": 200
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.x-dev",
+  "image": "door302_sheet.png",
+  "format": "RGBA8888",
+  "size": { "w": 256, "h": 128 },
+  "scale": "1",
+  "frameTags": [
+  ]
+ }
+}

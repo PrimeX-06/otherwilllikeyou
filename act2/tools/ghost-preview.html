@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>底稿预览</title>
+<style>
+  html, body { margin: 0; background: #14121a; display: grid; place-items: center; min-height: 100vh; }
+  canvas { width: min(96vw, 1024px); image-rendering: pixelated; box-shadow: 0 0 0 1px #3a3542; }
+</style>
+</head>
+<body>
+<canvas id="c" width="512" height="288"></canvas>
+<script src="../patterns.js"></script>
+<script src="../ghost-art.js"></script>
+<script src="../board.js"></script>
+<script>
+  // 只跑板面，不进剧情：用来单独看底稿长什么样（改 makeGhost 就刷这个）
+  const cv = document.getElementById("c");
+  const board = ACT2.Board.createBoard(cv);
+  window.__preview = board;   // 调试口：截图脚本、格子表检查都从这里拿
+  function loop() {
+    board.render(cv.getContext("2d"));
+    requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>

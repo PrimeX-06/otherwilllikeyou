@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第三幕 · 校园日常</title>
+<link rel="stylesheet" href="daily.css">
+</head>
+<body>
+<main id="stage">
+  <canvas id="scene" width="512" height="288" aria-label="校园"></canvas>
+
+  <div id="chapter">校园日常</div>
+
+  <div id="obj" class="obj"><b>目标</b><span id="objSub"></span></div>
+  <div id="hint" class="hint"></div>
+
+  <!-- 线索本入口。只在《校园寻物》里出现 -->
+  <button id="nbBtn" type="button" hidden>线索本 <b>0</b></button>
+  <div id="msg" class="msg"></div>
+
+  <!-- 体育活动的小面板：只有一行进度 + 一行操作提示，不挡球路 -->
+  <div id="bgHud" class="bg-hud">
+    <b id="bgCount">传接 0 / 5</b>
+    <span id="bgTip">球滚到脚边时按 空格 接住</span>
+  </div>
+  <div id="bgCtl" hidden>
+    <div class="bg-pick">
+      <button id="bgToGirl" type="button">朱里</button>
+      <button id="bgToFriend" type="button">闺蜜</button>
+    </div>
+    <button id="bgAct" type="button">按住蓄力<br>接球</button>
+  </div>
+
+  <div id="dialog" class="dlg">
+    <b id="who"></b>
+    <p id="line"></p>
+    <small>E / 空格 / 点击 继续</small>
+  </div>
+
+  <!-- 章节目录：四个日常，按日期排，不硬凑成同一天 -->
+  <div id="hub" class="hub show">
+    <h1>第三幕 · 校园日常</h1>
+    <p class="sub">那些没说出口的话</p>
+    <ul id="hubList"></ul>
+    <div class="row">
+      <button id="hubStart" type="button">按顺序开始</button>
+      <button id="hubReset" type="button">清掉存档</button>
+    </div>
+  </div>
+
+  <!-- 猜词面板。整块盖在画面上，三个人做头像条，中央是题面 -->
+  <div id="wg" class="wg" hidden>
+    <div class="wg-card">
+      <div class="wg-head">
+        <div class="chip" data-who="girl"><i class="face f-girl"></i><b>朱里</b></div>
+        <div class="chip" data-who="me"><i class="face f-boy"></i><b>和臣</b></div>
+        <div class="chip" data-who="friend"><i class="face f-friend"></i><b>闺蜜</b></div>
+      </div>
+      <div class="wg-round" id="wgRound"></div>
+      <div class="wg-host" id="wgHost"></div>
+      <ul class="wg-clues" id="wgClues"></ul>
+      <div class="wg-say" id="wgSay"></div>
+      <div class="wg-opts" id="wgOpts"></div>
+      <div class="wg-tools">
+        <button id="wgHint" type="button">再给点提示</button>
+        <input id="wgInput" type="text" maxlength="8" placeholder="或者直接写出来" autocomplete="off">
+        <button id="wgSend" type="button">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 线索本。三种线索分开列，不混着放 -->
+  <div id="nb" class="nb" hidden>
+    <div class="nb-card">
+      <h3>线索本</h3>
+      <p class="nb-legend">
+        <i class="k-see">亲眼看见</i>是真的　·
+        <i class="k-rem">我记得</i>是真的　·
+        <i class="k-gue">我猜的</i>可能错
+      </p>
+      <ul id="nbList"></ul>
+      <p class="nb-empty" id="nbEmpty">还没看到什么。</p>
+      <div class="row">
+        <button id="nbHint" type="button">问问闺蜜</button>
+        <button id="nbClose" type="button">合上</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="card" class="card" hidden>
+    <h2 id="cardTitle"></h2>
+    <p id="cardBody"></p>
+    <div class="row">
+      <button id="cardAgain" type="button">再玩一次</button>
+      <button id="cardBack" type="button">回到目录</button>
+    </div>
+  </div>
+
+  <div id="fade"></div>
+</main>
+
+<script src="core.js"></script>
+<script src="trio.js"></script>
+<script src="explore.js"></script>
+<script src="errand.js"></script>
+<script src="search.js"></script>
+<script src="wordgame.js"></script>
+<script src="ball.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

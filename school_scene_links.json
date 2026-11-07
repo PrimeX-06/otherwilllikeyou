@@ -1,0 +1,182 @@
+{
+  "canvas": {
+    "width": 512,
+    "height": 288
+  },
+  "coordinateSystem": "top-left origin, pixels, transition trigger positions are first-pass targets",
+  "scenes": {
+    "school_exterior": {
+      "image": "assets/scenes/school_exterior.png",
+      "floorTop": 195,
+      "links": [
+        {
+          "id": "main_entrance",
+          "target": "school_corridor",
+          "trigger": {
+            "x": 231,
+            "y": 190,
+            "width": 70,
+            "height": 42
+          },
+          "spawn": {
+            "x": 34,
+            "y": 230
+          }
+        }
+      ],
+      "landmark": "两层可见的外廊护栏与中央入口；照片无法确定真实楼层平面"
+    },
+    "school_corridor": {
+      "image": "assets/scenes/school_corridor.png",
+      "floorTop": 176,
+      "links": [
+        {
+          "id": "back_to_exterior",
+          "target": "school_exterior",
+          "trigger": {
+            "x": 0,
+            "y": 176,
+            "width": 22,
+            "height": 112
+          },
+          "spawn": {
+            "x": 266,
+            "y": 235
+          }
+        },
+        {
+          "id": "classroom_door",
+          "target": "school_classroom",
+          "trigger": {
+            "x": 358,
+            "y": 145,
+            "width": 66,
+            "height": 82
+          },
+          "spawn": {
+            "x": 90,
+            "y": 216
+          }
+        }
+      ],
+      "conversationSpot": {
+        "x": 180,
+        "y": 195,
+        "facing": "up",
+        "note": "临空护栏旁，门前通路保持畅通"
+      }
+    },
+    "school_classroom": {
+      "image": "assets/scenes/school_classroom.png",
+      "floorTop": 176,
+      "links": [
+        {
+          "id": "back_to_corridor",
+          "target": "school_corridor",
+          "trigger": {
+            "x": 18,
+            "y": 145,
+            "width": 66,
+            "height": 82
+          },
+          "spawn": {
+            "x": 391,
+            "y": 216
+          }
+        }
+      ],
+      "provisionalObstacles": [
+        {
+          "x": 100,
+          "y": 175,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 169,
+          "y": 175,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 238,
+          "y": 175,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 307,
+          "y": 175,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 376,
+          "y": 175,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 100,
+          "y": 212,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 169,
+          "y": 212,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 238,
+          "y": 212,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 307,
+          "y": 212,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 376,
+          "y": 212,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 100,
+          "y": 249,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 169,
+          "y": 249,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 238,
+          "y": 249,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 307,
+          "y": 249,
+          "width": 44,
+          "height": 37
+        },
+        {
+          "x": 376,
+          "y": 249,
+          "width": 44,
+          "height": 37
+        }
+      ]
+    }
+  }
+}

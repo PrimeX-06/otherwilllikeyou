@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# local logs and test dumps
+*.log
+shots/
+**/shots/
+
+# dev-only screenshots and generated test output
+ref/
+**/previews/
+**/tools/out/
+**/out/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# local backups
+*.before-*.html

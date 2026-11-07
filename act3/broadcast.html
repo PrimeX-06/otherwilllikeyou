@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第三幕 · 晚间广播</title>
+<link rel="stylesheet" href="broadcast.css">
+</head>
+<body>
+<div id="stage">
+  <div id="frame">
+    <div id="screen">
+      <canvas id="game" width="512" height="288"></canvas>
+
+      <div id="hud">
+        <button id="leave" title="离开（Esc）">离开</button>
+      </div>
+
+      <div id="dlg">
+        <b id="dlgWho"></b>
+        <p id="dlgLine"></p>
+        <small>E</small>
+      </div>
+
+      <div id="bye">
+        <h2>先到这儿</h2>
+        <p>广播还没录完。</p>
+        <p class="note">音游没法从半句中间接上，下次进来从头再录一遍。</p>
+        <div class="row">
+          <button id="resume">再录一次</button>
+          <button id="quit">离开</button>
+        </div>
+      </div>
+
+      <div id="card">
+        <h2>第三幕 · 晚间广播</h2>
+        <div id="rank">A</div>
+        <p id="stat"></p>
+        <p class="score">得分 <b id="score2">0</b></p>
+        <div class="row">
+          <button id="again">再录一次</button>
+          <button id="out">一起走出广播室</button>
+        </div>
+      </div>
+
+      <div id="loading" class="show">加载中…</div>
+    </div>
+  </div>
+
+  <!-- 广播稿。整条在画布**下面**，像电视台的下三分之一条：
+       画面上那两条轨道才是要盯着看的东西，字幕只负责让你知道念到哪了。 -->
+  <div id="script">
+    <b id="scrWho"></b>
+    <p id="scrLine"></p>
+  </div>
+</div>
+
+<script src="audio.js"></script>
+<script src="script.js"></script>
+<script src="chart.js"></script>
+<script src="rhythm.js"></script>
+<script src="scene3.js"></script>
+</body>
+</html>

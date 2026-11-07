@@ -1,0 +1,11 @@
+<!DOCTYPE html><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}
+#i{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated}</style>
+<img id="i">
+<script>
+  const q = new URLSearchParams(location.search);
+  const i = document.getElementById('i');
+  i.src = q.get('f') || '03b-tidy.png';
+  const k = +(q.get('k') || 3), x = +(q.get('x') || 0), y = +(q.get('y') || 0);
+  i.style.transform = `scale(${k}) translate(${-x}px,${-y}px)`;
+</script>

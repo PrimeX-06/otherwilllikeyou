@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第二幕 · 去广播室</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="stage" aria-label="从黑板报到广播室的过场">
+    <canvas id="scene" width="512" height="288" aria-label="校园场景"></canvas>
+    <img id="cg" src="assets/cg_turn_to_zhuli_single_desk.png" alt="朱里拿着稿纸走进广播室，和臣坐在同一张播音桌前回头看她" hidden>
+    <div id="shade"></div>
+    <div id="chapter">CHAPTER 02 / ORDINARY DAYS</div>
+    <div id="dialog" hidden><b id="who"></b><p id="line"></p><small>E</small></div>
+    <div id="controls" hidden>
+      <span id="hint"></span>
+      <button id="walk" type="button">走过去</button>
+      <button id="act" type="button" hidden>推门进入</button>
+    </div>
+    <div id="ready" hidden>
+      <h1>两个人都到了</h1>
+      <p>稿纸摊开，麦克风在眼前。朱里把她那份稿子放好，偏头看了我一眼。</p>
+      <p>“那开始吧。”</p>
+      <small>接下来试音，然后开始晚间广播</small>
+      <div class="actions">
+        <a id="start-broadcast" href="../../act3/broadcast.html?from=bridge">开始广播</a>
+        <button id="replay" type="button">重看这段</button>
+        <a href="../blackboard.html">返回黑板报</a>
+      </div>
+    </div>
+  </main>
+  <script src="layout.js"></script>
+  <script src="bridge.js"></script>
+</body>
+</html>

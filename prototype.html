@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第一幕 · 楼道 — 像素测试</title>
+<style>
+  :root {
+    --ink: #1b1418;
+    --paper: #f2e9da;
+    --accent: #c96b5a;
+    --panel: rgba(15, 12, 16, .86);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; }
+  body {
+    background: #0d0b10;
+    color: var(--paper);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+  }
+  #stage {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+    container-type: size;
+  }
+  canvas {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: max(100vw, calc(100vh * 16 / 9));
+    height: max(100vh, calc(100vw * 9 / 16));
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    font-size: clamp(10px, 1.25cqw, 26px);
+    letter-spacing: .04em;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    padding: .7em 1.1em 1.7em;
+    color: rgba(242,233,218,.82);
+    text-shadow: 0 1px 0 rgba(0,0,0,.7);
+    background: linear-gradient(180deg, rgba(10,8,12,.64), rgba(10,8,12,0));
+  }
+  .topbar b { color: var(--paper); font-weight: 600; }
+  .topbar .keys { white-space: nowrap; }
+  @media (max-width: 760px) { .topbar .keys { display: none; } }
+  .goal {
+    display: block;
+    margin-top: .3em;
+    font-size: .8em;
+    letter-spacing: .16em;
+    color: rgba(255,201,143,.9);
+    text-shadow: 0 1px 0 rgba(0,0,0,.7);
+    opacity: 0;
+    transition: opacity .45s ease;
+  }
+  .goal.show { opacity: 1; }
+  #stage.cine .goal { opacity: 0 !important; }
+  .prompt {
+    position: absolute;
+    left: 50%;
+    bottom: 21%;
+    transform: translateX(-50%);
+    padding: .3em .65em;
+    background: var(--panel);
+    border: 1px solid rgba(242,233,218,.25);
+    border-radius: 3px;
+    font-size: clamp(11px, 1.4cqw, 28px);
+    opacity: 0;
+    transition: opacity .18s ease;
+  }
+  .prompt.show { opacity: 1; }
+  .prompt kbd {
+    display: inline-block;
+    padding: 0 5px;
+    margin-right: 5px;
+    border: 1px solid rgba(242,233,218,.45);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: .9em;
+  }
+  .dialog {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: 6%;
+    min-height: 15%;
+    padding: .8em 1.2em .95em;
+    background: var(--panel);
+    border: 1px solid rgba(242,233,218,.22);
+    box-shadow: 0 8px 28px rgba(0,0,0,.35);
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .22s ease, transform .22s ease;
+  }
+  .dialog.show { opacity: 1; transform: translateY(0); }
+  .dialog .who {
+    color: var(--accent);
+    font-size: .82em;
+    letter-spacing: .18em;
+    margin-bottom: 6px;
+  }
+  .dialog .line {
+    font-size: clamp(13px, 1.75cqw, 34px);
+    line-height: 1.75;
+    min-height: 1.75em;
+    white-space: pre-wrap;
+  }
+  .dialog .more {
+    position: absolute;
+    right: .9em;
+    bottom: .55em;
+    color: rgba(242,233,218,.55);
+    font-size: .82em;
+  }
+  .subtitle {
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: 9%;
+    text-align: center;
+    font-size: clamp(14px, 1.9cqw, 38px);
+    line-height: 1.6;
+    color: #fff6e8;
+    text-shadow: 0 2px 6px rgba(0,0,0,.9), 0 0 20px rgba(0,0,0,.6);
+    opacity: 0;
+    transition: opacity .25s ease;
+  }
+  .subtitle.show { opacity: 1; }
+  .subtitle .who {
+    display: block;
+    margin-bottom: 4px;
+    color: #ffc98f;
+    font-size: .72em;
+    letter-spacing: .22em;
+  }
+  .subtitle .who:empty { display: none; }
+  #stage.cine .topbar { opacity: 0; }
+  #stage.cine .prompt { opacity: 0 !important; }
+  .endcard {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1em;
+    /* the act ends on black: there is nothing behind the words worth seeing */
+    background: #050407;
+    opacity: 0;
+    transition: opacity .9s ease;
+    pointer-events: none;
+  }
+  .endcard.show { opacity: 1; }
+  .endcard.hide { opacity: 0; transition: none; }
+  /* the closing note, printed a character at a time like the dialogue above,
+     but on its own black page and with no box around it */
+  .endcard .epi {
+    position: relative;   /* the invisible copy below sets the final height */
+    max-width: 26em;
+    margin: 0;
+    font-size: clamp(12px, 1.45cqw, 28px);
+    line-height: 2.05;
+    letter-spacing: .1em;
+    color: rgba(242,233,218,.88);
+    text-align: left;
+    white-space: pre-line;
+    opacity: 0;
+    transition: opacity 1.1s ease;
+  }
+  /* Reserve the whole note's height from the first character, or the lines
+     would grow downward and the block would drift up the page as it prints. */
+  .endcard .epi .ghost { visibility: hidden; }
+  .endcard .epi .typed { position: absolute; inset: 0; }
+  .endcard.typing .epi { opacity: 1; }
+  .endcard .title {
+    margin-top: .55em;   /* space reserved from the start, so nothing jumps */
+    font-size: clamp(18px, 3cqw, 58px);
+    letter-spacing: .5em;
+    color: #f2e9da;
+    text-shadow: 0 2px 18px rgba(0,0,0,.8);
+  }
+  .endcard .hint {
+    max-width: 92%;
+    font-size: clamp(9px, 1.05cqw, 21px);
+    line-height: 1.9;
+    letter-spacing: .34em;
+    text-align: center;
+    color: rgba(242,233,218,.42);
+  }
+  /* the title and the way back wait until the note has been read */
+  .endcard .title, .endcard .hint {
+    opacity: 0;
+    transition: opacity .9s ease;
+  }
+  .endcard.done .title, .endcard.done .hint { opacity: 1; }
+  .loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0b10;
+    color: rgba(242,233,218,.7);
+    letter-spacing: .2em;
+    font-size: clamp(12px, 1.4cqw, 28px);
+  }
+  /* Scenes 04–06 live in the phone: the pixel page frames the shooting segment
+     and fades out of the way. The frame stays black while it boots, and the
+     note is the only thing on screen until it can show a picture. */
+  .gamehost {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    background: #05040a;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .7s ease;
+  }
+  .gamehost.show { opacity: 1; pointer-events: auto; }
+  .gamehost.hide { opacity: 0; transition: none; }
+  .gamehost iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    opacity: 0;
+    transition: opacity .6s ease;
+  }
+  .gamehost.ready iframe { opacity: 1; }
+  .gamehost .note {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(242,233,218,.68);
+    letter-spacing: .22em;
+    font-size: clamp(11px, 1.15cqw, 23px);
+    text-align: center;
+    transition: opacity .4s ease;
+    pointer-events: none;
+  }
+  .gamehost.ready .note { opacity: 0; }
+  /* The segment is over but the act is not: one line says how to get up, and
+     the card waits until the player is actually home. */
+  .gamehost.ended .note { opacity: 1; }
+  /* The school arc is not a separate page the player opens: Act 1 hands the
+     whole screen to it in place. The frame covers everything (the act card
+     below included), keeps its own focus, and navigates itself from the
+     corridor preview through the broadcast to the railing. The black behind it
+     is the same black the act card ends on, so the handover reads as one
+     continuous cut. */
+  .storyhost {
+    position: absolute;
+    inset: 0;
+    z-index: 70;
+    background: #050407;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .6s ease;
+  }
+  .storyhost.show { opacity: 1; pointer-events: auto; }
+  .storyhost iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #050407;
+    opacity: 0;
+    transition: opacity .8s ease;
+  }
+  .storyhost.ready iframe { opacity: 1; }
+  .debug {
+    position: absolute;
+    left: 1.4%;
+    bottom: 3.5%;
+    color: #9de0b8;
+    font-family: ui-monospace, monospace;
+    font-size: clamp(10px, .9cqw, 20px);
+    line-height: 1.5;
+    white-space: pre;
+    display: none;
+  }
+  .debug.show { display: block; }
+  /* Esc 暂停：与第二幕同一块遮罩、同一句提示 */
+  .pause {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    background: rgba(5, 4, 7, .86);
+    color: var(--paper);
+    font-size: clamp(16px, 2.4cqw, 50px);
+    letter-spacing: .5em;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s ease, visibility 0s linear .25s;
+  }
+  .pause.show { opacity: 1; visibility: visible; transition: opacity .25s ease; }
+  html.instant .dialog, html.instant .prompt { transition: none !important; }
+  .foot { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="game" width="512" height="288"></canvas>
+  <div class="hud">
+    <div class="topbar">
+      <span><b>第一幕</b> · <span id="sceneTitle">楼道</span>
+        <span class="goal" id="goal">302 的门 · 要不要敲一下？</span>
+      </span>
+      <span class="keys">WASD / 方向键 移动 · E 互动 · Esc 暂停 · R 重置</span>
+    </div>
+    <div class="prompt" id="prompt"><kbd>E</kbd><span id="promptText">敲门</span></div>
+    <div class="dialog" id="dialog">
+      <div class="who" id="who">朱里</div>
+      <div class="line" id="line"></div>
+      <div class="more" id="more">E</div>
+    </div>
+    <div class="subtitle" id="subtitle">
+      <span class="who" id="subWho"></span>
+      <span id="subLine"></span>
+    </div>
+    <div class="endcard" id="endcard">
+      <p class="epi"><span class="ghost" id="epilogueGhost" aria-hidden="true"></span><span class="typed" id="epilogue"></span></p>
+      <div class="title">第一幕 · 完</div>
+      <div class="hint">E 进入第二幕　·　R 重看第一幕</div>
+    </div>
+    <div class="pause" id="pause">已暂停</div>
+    <div class="debug" id="debug"></div>
+  </div>
+  <div class="gamehost" id="gamehost">
+    <div class="note" id="gameNote">正在打开手机里的游戏…</div>
+    <iframe id="gameframe" title="手机上的那一局" allow="autoplay; fullscreen"></iframe>
+  </div>
+  <div class="storyhost" id="storyhost" aria-label="第二幕 · 学校">
+    <iframe id="storyframe" title="第二幕 · 学校" allow="autoplay; fullscreen"></iframe>
+  </div>
+  <div class="loading" id="loading">加载中…</div>
+</div>
+<div class="foot">prototype · 512×288 · 16px tiles · 48×72 characters</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const W = 512, H = 288;
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  const stageEl = document.getElementById("stage");
+
+  const $ = (id) => document.getElementById(id);
+  const dialogEl = $("dialog");
+  const lineEl = $("line");
+  const whoEl = $("who");
+  const moreEl = $("more");
+  const promptEl = $("prompt");
+  const promptTextEl = $("promptText");
+  const subtitleEl = $("subtitle");
+  const subWhoEl = $("subWho");
+  const subLineEl = $("subLine");
+  const endcardEl = $("endcard");
+  const pauseEl = $("pause");
+  const epiEl = $("epilogue");
+  const epiGhostEl = $("epilogueGhost");
+  const debugEl = $("debug");
+  const loadingEl = $("loading");
+  const gameHostEl = $("gamehost");
+  const gameFrameEl = $("gameframe");
+  const gameNoteEl = $("gameNote");
+  const storyHostEl = $("storyhost");
+  const storyFrameEl = $("storyframe");
+
+  // scenes 04–06: the shooting segment, framed by this page
+  const GAME_SRC = "game/dust-corridor/dist/index.html?embed=1";
+  const gameEmbed = { active: false, ready: false, result: false, failed: false, timer: 0 };
+
+  // Act 2 onward runs in this frame, inside Act 1's page, so the whole school
+  // arc from the corridor to the railing is one uninterrupted flow.
+  const STORY_SRC = "school-preview.html?start=1";
+  const storyEmbed = { active: false, ready: false, navigated: false };
+
+  const FLOOR_Y = 176;       // wall/floor seam
+  const WALK_MIN_X = 22, WALK_MAX_X = 490;
+  const WALK_MIN_Y = 182, WALK_MAX_Y = 268;
+  const DOOR = { x: 317, y: 48, w: 64, h: 128 };
+  const GIRL_POS = { x: 348, y: 176 };
+  const PLAYER_START = { x: 180, y: 232 };
+
+  const img = {};
+  const sheets = {
+    girl: { src: "assets/characters/girl/girl_sheet.png", frames: 25 },
+    boy: { src: "assets/characters/boy/boy_sheet.png", frames: 23 },
+    corridor: { src: "assets/scenes/corridor.png" },
+    bedroom: { src: "assets/scenes/bedroom.png" },
+    door302: { src: "assets/scenes/door302_sheet.png" },
+    door301: { src: "assets/scenes/door301.png" },
+    cg: { src: "assets/scenes/cg_doorway.png" },
+  };
+
+  const GIRL = {
+    idle_down: [0, 1], idle_left: [2], idle_right: [3], idle_up: [4],
+    walk_down: [5, 6, 7, 8], walk_left: [9, 10, 11, 12],
+    walk_right: [13, 14, 15, 16], walk_up: [17, 18, 19, 20],
+    sit_left: [21], sit_right: [22], wave: [23, 24],
+  };
+  const BOY = {
+    idle_down: [0, 1], idle_left: [2], idle_right: [3], idle_up: [4],
+    walk_down: [5, 6, 7, 8], walk_left: [9, 10, 11, 12],
+    walk_right: [13, 14, 15, 16], walk_up: [17, 18, 19, 20],
+    sit_left: [21], sit_right: [22],
+  };
+
+  const sceneState = {
+    name: "corridor",
+    bedroomSeen: false,
+    returning: false,   // walking home after the phone goes dark
+    done: false         // the act card is up
+  };
+  const sceneTitleEl = $("sceneTitle");
+  const goalEl = $("goal");
+
+  const player = {
+    x: PLAYER_START.x, y: PLAYER_START.y,
+    dir: "right", moving: false, animTime: 0, frame: 0,
+  };
+  const girl = { visible: false, dir: "down", animTime: 0 };
+  const door = { state: 0, opened: false, shake: 0 };
+
+  const keys = new Set();
+  const save = {
+    hasSave: false,
+    event: 0,          // 0 none, 1..5 stages, 6 done
+    dialogOpen: false,
+    dialogTimer: 0,
+  };
+
+  let last = 0, elapsed = 0, debug = false, paused = false;
+  let dialogue = null; // {who,text,chars,shown,onDone,hold}
+  let fadeIn = 0;      // black overlay after a cut
+  let fadeOut = 0;     // and one that stays: the end of the act
+  let pendingIntro = -1;
+  // the girl scoots along the bed toward the boy when the intro starts
+  const GIRL_SIT_Y = 144;
+  const girlSlide = { from: 170, to: GIRL_SIT_Y, t: -1, dur: 1.35 };
+  let girlY = GIRL_SIT_Y;
+
+  // The doorway cut hands the room back to us outside the frame: they walk in
+  // from the hall together, she climbs onto the bed and pats the mattress, he
+  // follows after her line. Positions are feet (the corridor's convention);
+  // the sitting frames are drawn from the sprite's top-left, i.e. feet minus
+  // (24, 72), which lands exactly on the still positions (118, 88) / (118, 170).
+  const BED_FEET = { boy: { x: 142, y: 160 }, girl: { x: 142, y: 242 } };
+  const BED_WALK_START = {
+    boy: { x: 560, y: 150, path: [[330, 154], [206, 174], [185, 175]] },
+    girl: { x: 500, y: 150, path: [[356, 158], [224, 228], [168, 248]] },
+  };
+  function bedWalker(key) {
+    const s = BED_WALK_START[key];
+    return {
+      key, x: s.x, y: s.y, path: s.path,
+      dir: "left", moving: true, anim: 0, frame: 0,
+      mode: "walk", seg: 0, t: 0, fromX: s.x, fromY: s.y,
+    };
+  }
+  const bedWalk = {
+    active: false, introT: -1, doneT: 0, seatBoy: false,
+    boy: bedWalker("boy"), girl: bedWalker("girl"),
+  };
+  let phoneAlpha = 1;  // her phone only exists once she is on the bed
+
+  // the closing transition: the camera dollies in on the phone in her lap,
+  // then the lens rolls a quarter turn and falls through the lit screen —
+  // the phone never moves; it is the view that turns into landscape
+  const phoneShot = {
+    active: false,
+    t: 0,
+    zoomDur: 2.8,
+    enterDur: 3.0,
+    holdDur: 0.35,
+    fadeDur: 0.7,
+    zoom: 4.8,
+    enterZoom: 72,
+    flip: 0,           // camera roll, 0..pi/2
+    enter: 0,          // dive progress, 0..1
+    target: { x: 146, y: 187 },     // the phone body we close in on
+    screen: { x: 147.5, y: 188 },   // the lit screen we fall through
+    cx: W / 2, cy: H / 2, scale: 1,
+    ease: 0, flash: 0, black: 0, done: false,
+  };
+
+  // corridor -> bedroom cut: doorway CG with subtitles
+  const cine = { active: false, phase: "cg", t: 0, line: 0, lineT: 0 };
+  const cineLines = [
+    { who: "朱里", text: "「要一起玩吗？」" },
+    { who: "", text: "（你跟着她走进了房间。）" },
+  ];
+
+  function loadAll() {
+    const list = Object.entries(sheets).map(([k, v]) => new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => { img[k] = im; resolve(); };
+      im.onerror = () => reject(new Error("missing " + v.src));
+      im.src = v.src;
+    }));
+    return Promise.all(list);
+  }
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  function nearDoor() {
+    return player.x > 292 && player.x < 412 && player.y < 226;
+  }
+  function near301() {
+    return player.x > 72 && player.x < 216 && player.y < 226;
+  }
+  function blocked(x, y) {
+    // the stairwell is a wall opening; the floor in front of it is still walkable
+    if (x > 444 && y < 206) return true;
+    return false;
+  }
+
+  function say(who, text, opts = {}) {
+    dialogue = {
+      who, text, shown: 0, timer: 0,
+      speed: opts.speed || 34,
+      hold: opts.hold || 0,
+      onDone: opts.onDone || null,
+      skippable: opts.skippable !== false,
+      auto: !!opts.auto,
+    };
+    whoEl.textContent = who;
+    lineEl.textContent = "";
+    moreEl.textContent = "";
+    dialogEl.classList.add("show");
+    save.dialogOpen = true;
+  }
+
+  function advanceDialog() {
+    if (!dialogue) return;
+    if (dialogue.shown < dialogue.text.length) {
+      dialogue.shown = dialogue.text.length;
+      lineEl.textContent = dialogue.text;
+      moreEl.textContent = dialogue.onDone ? "E" : "";
+      return;
+    }
+    if (dialogue.onDone) {
+      const fn = dialogue.onDone;
+      dialogue = null;
+      dialogEl.classList.remove("show");
+      save.dialogOpen = false;
+      fn();
+    } else {
+      dialogue = null;
+      dialogEl.classList.remove("show");
+      save.dialogOpen = false;
+    }
+  }
+
+  function setDoor(n) { door.state = clamp(n, 0, 3); }
+
+  function startDoorEvent() {
+    if (door.opened || save.hasSave) return;
+    save.hasSave = true;
+    save.event = 1;
+    player.dir = "up";
+    setDoor(0);
+    say("旁白", "你抬起手，敲了三下门。", {
+      onDone: () => {
+        save.event = 2;
+        say("旁白", "门里传来很轻的脚步声，停在了门后。", {
+          onDone: () => {
+            save.event = 3;
+            setDoor(1);
+            say("朱里", "……谁？", {
+              onDone: () => {
+                save.event = 4;
+                setDoor(2);
+                girl.visible = true;
+                say("旁白", "门开了一条缝。门后露出半张脸。", {
+                  onDone: () => {
+                    save.event = 5;
+                    setDoor(3);
+                    // she has never met him — no recognition, just a neighbour
+                    // at the door who wants something
+                    say("朱里", "……有事吗？", {
+                      onDone: () => {
+                        save.event = 6;
+                        door.opened = true;
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  function startGirlSlide() {
+    girlY = girlSlide.from;
+    girlSlide.t = 0;
+  }
+
+  function startBedWalk() {
+    bedWalk.active = true;
+    bedWalk.introT = -1;
+    bedWalk.doneT = 0;
+    bedWalk.seatBoy = false;
+    for (const key of ["boy", "girl"]) {
+      const s = BED_WALK_START[key];
+      const a = bedWalk[key];
+      a.x = s.x; a.y = s.y; a.path = s.path;
+      a.dir = "left"; a.moving = true; a.anim = 0; a.frame = 0;
+      a.mode = "walk"; a.seg = 0; a.t = 0; a.fromX = s.x; a.fromY = s.y;
+    }
+    girlY = girlSlide.from;
+    girlSlide.t = -1;
+    phoneAlpha = 0;
+  }
+
+  function stepBedActor(a, dt) {
+    if (a.mode === "walk") {
+      const target = a.path[a.seg];
+      if (!target) { a.mode = "stand"; a.moving = false; return; }
+      const dx = target[0] - a.x, dy = target[1] - a.y;
+      const d = Math.hypot(dx, dy);
+      const step = 100 * dt;
+      if (d <= step) {
+        a.x = target[0];
+        a.y = target[1];
+        a.seg += 1;
+        if (a.seg >= a.path.length) { a.mode = "stand"; a.moving = false; }
+      } else {
+        a.x += (dx / d) * step;
+        a.y += (dy / d) * step;
+        if (Math.abs(dx) >= Math.abs(dy)) a.dir = dx < 0 ? "left" : "right";
+        else a.dir = dy < 0 ? "up" : "down";
+        a.moving = true;
+        a.anim += dt;
+        a.frame = Math.floor(a.anim * 8) % 4;
+      }
+    } else if (a.mode === "hop") {
+      // a short, eased slide up onto the mattress; the sprite ends exactly on
+      // the still pose, so the hand-off to the static draw has no seam
+      a.t = Math.min(1, a.t + dt / 0.5);
+      const e = 1 - Math.pow(1 - a.t, 3);
+      const f = BED_FEET[a.key];
+      a.x = a.fromX + (f.x - a.fromX) * e;
+      a.y = a.fromY + (f.y - a.fromY) * e;
+      if (a.t >= 1) { a.mode = "sit"; a.moving = false; }
+    }
+  }
+
+  function seatActor(a) {
+    if (a.mode !== "stand") return;
+    a.mode = "hop";
+    a.t = 0;
+    a.fromX = a.x;
+    a.fromY = a.y;
+  }
+
+  function seatBoy() {
+    const a = bedWalk.boy;
+    if (!bedWalk.active || a.mode === "sit" || a.mode === "hop") return;
+    // still on the way over: sit down the moment the walk ends
+    if (a.mode === "walk") { bedWalk.seatBoy = true; return; }
+    seatActor(a);
+  }
+
+  function updateBedWalk(dt) {
+    stepBedActor(bedWalk.boy, dt);
+    stepBedActor(bedWalk.girl, dt);
+    // she leads: the instant she reaches the bed she climbs on
+    if (bedWalk.girl.mode === "stand") seatActor(bedWalk.girl);
+    // he waits for her line, then climbs on once he is by the bed
+    if (bedWalk.seatBoy && bedWalk.boy.mode === "stand") seatActor(bedWalk.boy);
+    // a beat after she sits, the invitation plays on its own
+    if (bedWalk.girl.mode === "sit" && bedWalk.introT < 0) bedWalk.introT = 0.32;
+    if (bedWalk.introT > 0) {
+      bedWalk.introT -= dt;
+      if (bedWalk.introT <= 0) { bedWalk.introT = 0; bedroomIntro(); }
+    }
+    if (bedWalk.boy.mode === "sit" && bedWalk.girl.mode === "sit") {
+      bedWalk.doneT += dt;
+      if (bedWalk.doneT > 0.15) bedWalk.active = false;
+    }
+  }
+
+  function bedroomIntro() {
+    startGirlSlide();
+    // he climbs up as she makes room, so the line lands on a settled picture
+    seatBoy();
+    say("旁白", "（她拍了拍床沿。）", {
+      onDone: () => say("朱里", "「坐这儿吧。」", { hold: 0 })
+    });
+  }
+
+  function startOpening() {
+    say("旁白", "（楼道里很安静。前几天就听说，302 搬来了新邻居，一直没见过。）", {
+      onDone: () => say("旁白", "（……好无聊。）", {
+        onDone: () => say("旁白", "（302 的门就在走廊那头。要不要去敲一下？）", {})
+      })
+    });
+  }
+
+  function startPhoneShot() {
+    phoneShot.active = true;
+    phoneShot.t = 0;
+    phoneShot.ease = 0;
+    phoneShot.scale = 1;
+    phoneShot.cx = W / 2;
+    phoneShot.cy = H / 2;
+    phoneShot.black = 0;
+    phoneShot.flip = 0;
+    phoneShot.enter = 0;
+    phoneShot.flash = 0;
+    phoneShot.done = false;
+    girlY = GIRL_SIT_Y;
+    girlSlide.t = -1;
+    dialogue = null;
+    save.dialogOpen = false;
+    dialogEl.classList.remove("show");
+    promptEl.classList.remove("show");
+    endcardEl.classList.remove("show", "hide");
+    stageEl.classList.add("cine");
+    keys.clear();
+  }
+
+  function easeInOutCubic(p) {
+    return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+  }
+
+  function updatePhoneShot(dt) {
+    phoneShot.t += dt;
+    const { zoomDur, enterDur, holdDur, fadeDur, target, screen } = phoneShot;
+    // phase 1: lean in until the phone sits dead centre
+    let e = 1;
+    if (phoneShot.t < zoomDur) e = easeInOutCubic(phoneShot.t / zoomDur);
+    phoneShot.ease = e;
+    const s = 1 + (phoneShot.zoom - 1) * e;
+    // keep the phone itself gliding from where it sits on screen to dead centre,
+    // instead of letting it swing out of frame while the camera pans and zooms
+    const screenX = target.x + (W / 2 - target.x) * e;
+    const screenY = target.y + (H / 2 - target.y) * e;
+    phoneShot.scale = s;
+    phoneShot.cx = target.x - (screenX - W / 2) / s;
+    phoneShot.cy = target.y - (screenY - H / 2) / s;
+
+    // phase 2: the lens rolls a quarter turn as it falls through the screen.
+    // The phone stays in her lap — the camera is what turns over — and the
+    // dive accelerates so the last stretch is all screen light.
+    const et = phoneShot.t - zoomDur;
+    const ep = et <= 0 ? 0 : Math.min(1, et / enterDur);
+    phoneShot.enter = ep;
+    phoneShot.flip = (Math.PI / 2) * easeInOutCubic(ep);
+    if (ep > 0) {
+      const dive = Math.pow(ep, 2.4);
+      phoneShot.scale = phoneShot.zoom + (phoneShot.enterZoom - phoneShot.zoom) * dive;
+      phoneShot.cx = screen.x;
+      phoneShot.cy = screen.y;
+      // the screen's light swallows the last of the picture
+      phoneShot.flash = easeInOutCubic(Math.max(0, (ep - 0.45) / 0.55));
+    } else {
+      phoneShot.flash = 0;
+    }
+
+    // hold on the light, then black; the game fades up out of it
+    const f = phoneShot.t - zoomDur - enterDur - holdDur;
+    phoneShot.black = f <= 0 ? 0 : Math.min(1, f / fadeDur);
+    if (!phoneShot.done && f >= fadeDur) {
+      phoneShot.done = true;
+      startGameEmbed();
+    }
+  }
+
+  function exitPhoneShot() {
+    phoneShot.active = false;
+    phoneShot.t = 0;
+    phoneShot.ease = 0;
+    phoneShot.scale = 1;
+    phoneShot.cx = W / 2;
+    phoneShot.cy = H / 2;
+    phoneShot.black = 0;
+    phoneShot.flip = 0;
+    phoneShot.enter = 0;
+    phoneShot.flash = 0;
+    phoneShot.done = false;
+    endcardEl.classList.add("hide");
+    endcardEl.classList.remove("show");
+    stageEl.classList.remove("cine");
+    fadeIn = 1;
+  }
+
+  // ------------------------------------------------------- the game on the phone
+  //
+  // Scenes 04–06 are not drawn here: the phone plays a real game. The frame
+  // stays black while it boots, then fades the picture up; when the segment
+  // reports it is over, the act card comes up on top of it, and E gives the
+  // room back. Messages are the only thing crossing the frame boundary:
+  //   story → game   start | switchControl | exit
+  //   game  → story  ready | started | result | exit | failed
+
+  function startGameEmbed() {
+    if (gameEmbed.active) return;
+    gameEmbed.active = true;
+    gameEmbed.ready = false;
+    gameEmbed.result = false;
+    gameEmbed.failed = false;
+    gameNoteEl.textContent = "正在打开手机里的游戏…";
+    gameHostEl.classList.remove("ready", "hide", "ended");
+    gameHostEl.classList.add("show");
+    // `dinner=N` shortens the stretch the player holds the phone (the game's
+    // own test switch); carried through so a watch-through can be timed. The
+    // nonce makes every visit a fresh document: `ready` is announced once.
+    const dinner = new URLSearchParams(location.search).get("dinner");
+    gameFrameEl.src = GAME_SRC
+      + (dinner ? "&dinner=" + encodeURIComponent(dinner) : "")
+      + "&t=" + Date.now();
+    clearTimeout(gameEmbed.timer);
+    gameEmbed.timer = setTimeout(() => {
+      if (!gameEmbed.active || gameEmbed.ready) return;
+      gameEmbed.failed = true;
+      gameNoteEl.textContent = "游戏没能启动（需要支持 WebGL2）· E 回到房间";
+    }, 20000);
+  }
+
+  function endGameEmbed(finished = true) {
+    if (!gameEmbed.active) return;
+    gameEmbed.active = false;
+    gameEmbed.ready = false;
+    gameEmbed.result = false;
+    gameEmbed.failed = false;
+    clearTimeout(gameEmbed.timer);
+    try {
+      gameFrameEl.contentWindow?.postMessage({ source: "phone-story", type: "exit" }, "*");
+    } catch (err) {
+      // the frame may already be gone; nothing left to tell
+    }
+    gameHostEl.classList.remove("show", "ready", "ended");
+    gameHostEl.classList.add("hide");
+    // The frame was holding focus — that is how it got the keys in the first
+    // place. Give it back here, or every press after the act lands in a
+    // document that is about to be blanked out, and the room looks frozen.
+    try {
+      gameFrameEl.blur();
+      window.focus();
+    } catch (err) {
+      // frame already gone
+    }
+    // Give the frame a moment to take the exit before unloading it — the game
+    // asks before leaving a live match, and the answer to that question is the
+    // one it was just sent.
+    setTimeout(() => {
+      if (!gameEmbed.active) gameFrameEl.src = "about:blank";
+    }, 600);
+    exitPhoneShot();
+    // The phone going dark is the middle of scene 06, not the end of the act.
+    if (finished) beginReturn();
+  }
+
+  // ---------------------------------------------------------- Act 2 onward
+  // The school arc used to be reached by navigating away from this page. It
+  // now loads into a full-screen frame at the moment the closing note is read,
+  // and from there the chain navigates itself: corridor preview → blackboard →
+  // broadcast room → after-broadcast → the railing. The player never leaves
+  // the story; only the document under the picture changes.
+  function focusStory() {
+    try { storyFrameEl.focus(); } catch (err) { /* frame is gone */ }
+  }
+
+  function startStoryFlow() {
+    if (storyEmbed.active) return;
+    storyEmbed.active = true;
+    storyEmbed.ready = false;
+    storyEmbed.navigated = false;
+    paused = false;
+    pauseEl.classList.remove("show");
+    keys.clear();
+    storyHostEl.classList.remove("ready");
+    storyHostEl.classList.add("show");
+    // A nonce makes every visit a fresh document; Act 2 still gets `start=1`
+    // so it opens at its own beginning rather than a saved state.
+    storyEmbed.navigated = true;
+    storyFrameEl.src = STORY_SRC + "&t=" + Date.now();
+  }
+
+  storyFrameEl.addEventListener("load", () => {
+    if (!storyEmbed.active || !storyEmbed.navigated) return;
+    storyEmbed.ready = true;
+    storyHostEl.classList.add("ready");
+    focusStory();
+  });
+
+  window.addEventListener("message", (e) => {
+    const d = e.data;
+    if (!d || d.source !== "dust-corridor") return;
+    if (d.type === "ready") {
+      if (!gameEmbed.active || gameEmbed.ready) return;
+      gameEmbed.ready = true;
+      try {
+        gameFrameEl.contentWindow?.postMessage({ source: "phone-story", type: "start" }, "*");
+        gameFrameEl.focus();
+      } catch (err) {
+        // ignored: the frame is on its own from here
+      }
+      // The frame stays black until the game says it has drawn a frame of the
+      // match. `ready` only means the renderer exists, and fading up on it
+      // shows the menu's orbit for one hop — a visible cut in the middle of a
+      // camera move. The timeout is the floor: a frame that never reports
+      // still gets shown rather than leaving the scene black forever.
+      clearTimeout(gameEmbed.timer);
+      gameEmbed.timer = setTimeout(() => {
+        if (!gameEmbed.active) return;
+        gameHostEl.classList.add("ready");
+      }, 8000);
+    } else if (d.type === "started") {
+      if (!gameEmbed.active) return;
+      clearTimeout(gameEmbed.timer);
+      gameHostEl.classList.add("ready");
+    } else if (d.type === "result") {
+      if (!gameEmbed.active) return;
+      gameEmbed.result = true;
+      // No act card here: the phone going dark is the middle of scene 06. The
+      // card belongs at the end of the walk home, not over a frozen firefight.
+      gameNoteEl.textContent = "E 起身";
+      gameHostEl.classList.add("ended");
+    } else if (d.type === "exit") {
+      endGameEmbed();
+    } else if (d.type === "failed") {
+      if (!gameEmbed.active) return;
+      gameEmbed.failed = true;
+      clearTimeout(gameEmbed.timer);
+      gameNoteEl.textContent = "游戏没能启动（需要支持 WebGL2）· E 回到房间";
+    }
+  });
+
+  function drawPhoneShotOverlay() {
+    const e = phoneShot.ease;
+    if (e > 0.001) {
+      // the screen's own light spills into the lens as we close in
+      const g = ctx.createRadialGradient(W / 2, H / 2, 8, W / 2, H / 2, 240);
+      g.addColorStop(0, `rgba(160,240,228,${0.11 * e * e})`);
+      g.addColorStop(0.45, `rgba(110,200,192,${0.05 * e * e})`);
+      g.addColorStop(1, "rgba(70,150,150,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      // and the room drops away at the edges as we lean in
+      const v = ctx.createRadialGradient(W / 2, H / 2, 70, W / 2, H / 2, 290);
+      v.addColorStop(0, "rgba(6,4,9,0)");
+      v.addColorStop(1, `rgba(6,4,9,${0.34 * e})`);
+      ctx.fillStyle = v;
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (phoneShot.flash > 0) {
+      // falling through the screen: the lit panel is all that is left
+      const fl = phoneShot.flash;
+      ctx.fillStyle = `rgba(196,248,240,${0.62 * fl * fl})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (phoneShot.black > 0) {
+      ctx.fillStyle = `rgba(5,4,7,${phoneShot.black})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function setScene(name, opts = {}) {
+    sceneState.name = name;
+    sceneTitleEl.textContent = name === "bedroom" ? "房间" : "楼道";
+    if (name === "bedroom") {
+      promptTextEl.textContent = "看手机";
+      girlY = girlSlide.from;
+      girlSlide.t = -1;
+      if (!sceneState.bedroomSeen) {
+        sceneState.bedroomSeen = true;
+        if (opts.walk) startBedWalk();
+        else if (opts.delayIntro) pendingIntro = opts.delayIntro;
+        else bedroomIntro();
+      } else if (!opts.walk) {
+        startGirlSlide();
+      }
+    } else {
+      promptTextEl.textContent = "敲 302 的门";
+    }
+  }
+
+  function startCine() {
+    if (cine.active) return;
+    cine.active = true;
+    cine.phase = "cg";
+    cine.t = 0;
+    cine.line = 0;
+    cine.lineT = 0;
+    stageEl.classList.add("cine");
+    dialogue = null;
+    save.dialogOpen = false;
+    dialogEl.classList.remove("show");
+    subtitleEl.classList.remove("show");
+    subLineEl.textContent = "";
+    subWhoEl.textContent = "";
+    promptEl.classList.remove("show");
+    keys.clear();
+  }
+
+  function updateCine(dt) {
+    cine.t += dt;
+    if (cine.phase === "cg") {
+      if (cine.line === 0 && cine.t < 0.8) return;
+      cine.lineT += dt;
+      const line = cineLines[cine.line];
+      const shown = Math.min(line.text.length, Math.floor(cine.lineT * 26));
+      subtitleEl.classList.add("show");
+      subWhoEl.textContent = line.who;
+      subLineEl.textContent = line.text.slice(0, shown);
+      if (shown >= line.text.length) {
+        const hold = cine.line === 0 ? 2.1 : 2.6;
+        if (cine.lineT >= line.text.length / 26 + hold) {
+          if (cine.line === 0) {
+            cine.line = 1;
+            cine.lineT = 0;
+          } else {
+            cine.phase = "out";
+            cine.t = 0;
+            subtitleEl.classList.remove("show");
+          }
+        }
+      }
+    } else if (cine.phase === "out") {
+      if (cine.t >= 0.5) {
+        cine.active = false;
+        stageEl.classList.remove("cine");
+        subtitleEl.classList.remove("show");
+        setScene("bedroom", { walk: true });
+        fadeIn = 1;
+      }
+    }
+  }
+
+  function drawCine() {
+    ctx.drawImage(img.cg, 0, 0);
+    // darken the lower third so the subtitle stays readable
+    const g = ctx.createLinearGradient(0, H * 0.55, 0, H);
+    g.addColorStop(0, "rgba(8,6,9,0)");
+    g.addColorStop(1, "rgba(8,6,9,0.55)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, H * 0.55, W, H * 0.45);
+    let a = 0;
+    if (cine.phase === "cg") a = Math.max(0, 1 - cine.t / 0.55);
+    else if (cine.phase === "out") a = Math.min(1, cine.t / 0.5);
+    if (a > 0) {
+      ctx.fillStyle = `rgba(6,4,7,${a})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  /**
+   * Scene 06, after the phone: the room, the door, the corridor.
+   *
+   * The segment ends inside the phone, but the act does not — she is still
+   * sitting on the bed, and the walk home is the part that closes the evening.
+   * Rather than dropping the player back into a room they cannot leave, the
+   * phone's end hands the picture back to the corridor and says why.
+   */
+  function beginReturn() {
+    sceneState.returning = true;
+    sceneState.done = false;
+    sceneState.name = "corridor";
+    sceneTitleEl.textContent = "楼道";
+    girl.visible = false;
+    player.x = 404;
+    player.y = 240;
+    player.dir = "down";
+    player.moving = false;
+    keys.clear();
+    fadeIn = 1;
+    promptEl.classList.remove("show");
+    say("旁白", "（你把手机还给她，替她带上了门。）", {
+      onDone: () => say("旁白", "（走廊里比刚才暗了。回家吧。）", {})
+    });
+  }
+
+  function finishAct() {
+    sceneState.returning = false;
+    sceneState.done = true;
+    keys.clear();
+    dialogue = null;
+    save.dialogOpen = false;
+    dialogEl.classList.remove("show");
+    promptEl.classList.remove("show");
+  }
+
+  /**
+   * The last frame of the act is a black page and a recollection.
+   *
+   * Everything before this was drawn: the corridor, the room, the phone. This
+   * part happened, and none of it can be drawn, so it is printed one character
+   * at a time at the dialogue's pace — the same reading rhythm, no box, no
+   * speaker. E completes the line the way it always does; the title and the
+   * way on to Act 2 only arrive once the note is whole.
+   */
+  const EPILOGUE_TEXT = [
+    "可能你会觉得离谱且俗套，",
+    "但是她其实一直是这么友善，",
+    "她的卧室为什么有电视，",
+    "其实那个房间甚至都没有装修，",
+    "她当初也是玩了一会儿直接就给我玩了，",
+    "游戏素材复用了一个开源射击游戏，",
+    "因为我们当时玩的就是pubg的中国授权移动版",
+  ].join("\n");
+  const epilogue = { active: false, done: false, t: 0, shown: 0, times: [] };
+
+  function startEpilogue() {
+    if (epilogue.active) return;
+    epilogue.active = true;
+    epilogue.done = false;
+    epilogue.t = 0;
+    epilogue.shown = 0;
+    epilogue.times = [];
+    // the first character waits for the black to settle, and each comma buys
+    // a breath — the note is read, not overheard
+    let at = 0.9;
+    for (const ch of EPILOGUE_TEXT) {
+      epilogue.times.push(at);
+      at += 1 / 17;
+      if (ch === "，") at += 0.22;
+      else if (ch === "、") at += 0.16;
+      else if (ch === "。") at += 0.4;
+      else if (ch === "\n") at += 0.3;
+    }
+    epiGhostEl.textContent = EPILOGUE_TEXT;
+    epiEl.textContent = "";
+    endcardEl.classList.remove("hide", "done");
+    endcardEl.classList.add("show", "typing");
+  }
+
+  function finishEpilogue() {
+    if (!epilogue.active || epilogue.done) return;
+    epilogue.done = true;
+    epilogue.shown = EPILOGUE_TEXT.length;
+    epiEl.textContent = EPILOGUE_TEXT;
+    endcardEl.classList.add("done");
+  }
+
+  function updateEpilogue(dt) {
+    if (!epilogue.active || epilogue.done) return;
+    epilogue.t += dt;
+    let n = epilogue.shown;
+    if (n < epilogue.times.length) {
+      while (n < epilogue.times.length && epilogue.times[n] <= epilogue.t) n += 1;
+    }
+    if (n !== epilogue.shown) {
+      epilogue.shown = n;
+      epiEl.textContent = EPILOGUE_TEXT.slice(0, n);
+    }
+    if (n >= epilogue.times.length) finishEpilogue();
+  }
+
+  function restartAct() {
+    fadeOut = 0;
+    bedWalk.active = false;
+    phoneAlpha = 1;
+    sceneState.done = false;
+    sceneState.returning = false;
+    sceneState.bedroomSeen = false;
+    epilogue.active = false;
+    epilogue.done = false;
+    epilogue.t = 0;
+    epilogue.shown = 0;
+    epiEl.textContent = "";
+    endcardEl.classList.remove("show", "hide", "typing", "done");
+    player.x = PLAYER_START.x;
+    player.y = PLAYER_START.y;
+    player.dir = "up";
+    door.state = 0;
+    door.opened = false;
+    save.hasSave = false;
+    save.event = 0;
+    save.dialogOpen = false;
+    dialogue = null;
+    girl.visible = false;
+    setScene("corridor");
+    fadeIn = 1;
+    startOpening();
+  }
+
+  function interact() {
+    if (sceneState.done) {
+      // the note prints on its own; E is only ever "I have read it"
+      if (!epilogue.done) {
+        if (epilogue.active) finishEpilogue();
+        return;
+      }
+      // Act 2 opens on a fresh slate, even if the preview was played before.
+      startStoryFlow();
+      return;
+    }
+    if (cine.active) return;
+    if (phoneShot.active) return;
+    if (save.dialogOpen) { advanceDialog(); return; }
+    if (sceneState.returning) {
+      if (near301()) {
+        say("旁白", "（门开着，屋里的电视还在响。）", {
+          onDone: () => {
+            say("旁白", "（第一幕到这里。）", { onDone: () => finishAct() });
+          }
+        });
+      } else {
+        say("旁白", "（301 在走廊那头。）", {});
+      }
+      return;
+    }
+    if (sceneState.name === "bedroom") {
+      if (bedWalk.active) return;
+      say("朱里", "「小声点，我妈在隔壁。」", {
+        hold: 0,
+        onDone: () => startPhoneShot(),
+      });
+      return;
+    }
+    if (nearDoor()) {
+      if (!door.opened) startDoorEvent();
+      else startCine();
+      return;
+    }
+    if (near301()) {
+      say("旁白", "301 的门关着。门缝里没有光。", {});
+    }
+  }
+
+  function update(dt) {
+    // The card only comes up once the picture is actually black: it used to
+    // appear over a lit room, which reads as a HUD element rather than as the
+    // end of an evening.
+    if (sceneState.done) {
+      if (fadeOut < 1) fadeOut = Math.min(1, fadeOut + dt / 0.9);
+      if (fadeOut >= 1) {
+        if (!epilogue.active) startEpilogue();
+        updateEpilogue(dt);
+      }
+    }
+    if (cine.active) { updateCine(dt); return; }
+    if (phoneShot.active) { updatePhoneShot(dt); return; }
+    if (fadeIn > 0) fadeIn = Math.max(0, fadeIn - dt / 0.6);
+    if (pendingIntro > 0) {
+      pendingIntro -= dt;
+      if (pendingIntro <= 0) {
+        pendingIntro = -1;
+        bedroomIntro();
+      }
+    }
+    // she scoots along the bed toward him; the phone rides along with her
+    if (girlSlide.t >= 0) {
+      girlSlide.t = Math.min(girlSlide.dur, girlSlide.t + dt);
+      const p = girlSlide.t / girlSlide.dur;
+      const e = 1 - Math.pow(1 - p, 3);
+      girlY = girlSlide.from + (girlSlide.to - girlSlide.from) * e;
+      if (p >= 1) girlSlide.t = -1;
+    }
+    if (bedWalk.active) updateBedWalk(dt);
+    // her phone fades in as she lands on the bed, not before
+    const girlSeated = !bedWalk.active || bedWalk.girl.mode === "sit";
+    phoneAlpha = clamp(phoneAlpha + (girlSeated ? dt / 0.55 : -dt / 0.25), 0, 1);
+    if (dialogue) {
+      dialogue.timer += dt;
+      const target = Math.min(dialogue.text.length, Math.floor(dialogue.timer * 1000 / dialogue.speed));
+      if (target > dialogue.shown) {
+        dialogue.shown = target;
+        lineEl.textContent = dialogue.text.slice(0, dialogue.shown);
+      }
+      if (dialogue.shown >= dialogue.text.length) {
+        if (dialogue.onDone) moreEl.textContent = "E";
+        else {
+          dialogue.hold += dt;
+          if (dialogue.hold > 1.8) advanceDialog();
+        }
+      }
+      if (dialogue && dialogue.auto && dialogue.shown >= dialogue.text.length) advanceDialog();
+    }
+
+    if (save.dialogOpen) {
+      player.moving = false;
+      return;
+    }
+
+    if (sceneState.name === "bedroom") {
+      player.moving = false;
+      return;
+    }
+
+    let dx = 0, dy = 0;
+    if (keys.has("a") || keys.has("arrowleft")) dx -= 1;
+    if (keys.has("d") || keys.has("arrowright")) dx += 1;
+    if (keys.has("w") || keys.has("arrowup")) dy -= 1;
+    if (keys.has("s") || keys.has("arrowdown")) dy += 1;
+
+    player.moving = dx !== 0 || dy !== 0;
+    if (player.moving) {
+      const len = Math.hypot(dx, dy) || 1;
+      const speed = 64;
+      const nx = clamp(player.x + dx / len * speed * dt, WALK_MIN_X, WALK_MAX_X);
+      const ny = clamp(player.y + dy / len * speed * dt, WALK_MIN_Y, WALK_MAX_Y);
+      if (!blocked(nx, player.y)) player.x = nx;
+      if (!blocked(player.x, ny)) player.y = ny;
+      if (Math.abs(dx) > Math.abs(dy)) player.dir = dx < 0 ? "left" : "right";
+      else if (dy !== 0) player.dir = dy < 0 ? "up" : "down";
+      player.animTime += dt;
+      player.frame = Math.floor(player.animTime * 8) % 4;
+    } else {
+      player.animTime += dt;
+      player.frame = 0;
+    }
+  }
+
+  function drawShadow(x, y, w = 20, h = 6, alpha = 0.22) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(x, y, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFrame(sheet, frameIndex, x, y) {
+    // sheets are horizontal, 1 row of 48x72 frames
+    ctx.drawImage(img[sheet], frameIndex * 48, 0, 48, 72, Math.round(x), Math.round(y), 48, 72);
+  }
+
+  function animFrames(mapping, dir, moving) {
+    if (!moving) return mapping["idle_" + dir] || mapping.idle_down;
+    return mapping["walk_" + dir] || mapping.walk_down;
+  }
+
+  function idleFrame(frames, dir) {
+    if (dir !== "down" || frames.length < 2) return frames[0];
+    return (elapsed % 3.4) > 3.15 ? frames[1] : frames[0];
+  }
+
+  function drawBedActor(a, sheet, map) {
+    if (a.mode === "hop") {
+      // a few pixels of lift so the step up onto the mattress reads as one
+      drawFrame(sheet, map.sit_right[0], a.x - 24, a.y - 72 - Math.sin(Math.PI * a.t) * 6);
+      return;
+    }
+    if (a.mode === "sit") {
+      // identical to the still scene, so handing back to it is invisible
+      drawFrame(sheet, map.sit_right[0], 118, sheet === "girl" ? girlY : 88);
+      return;
+    }
+    if (a.mode === "walk") drawShadow(a.x, a.y - 1, 26, 6, 0.2);
+    const frames = animFrames(map, a.dir, a.moving);
+    const fi = a.moving ? frames[a.frame % frames.length] : frames[0];
+    drawFrame(sheet, fi, a.x - 24, a.y - 72);
+  }
+
+  function drawBedActors() {
+    // he sits further up the bed, so she covers him where they meet
+    drawBedActor(bedWalk.boy, "boy", BOY);
+    drawBedActor(bedWalk.girl, "girl", GIRL);
+  }
+
+  function drawSunsetAtmosphere() {
+    // warm air over the scene, and a few dust motes drifting in the window light
+    const g = ctx.createLinearGradient(0, 60, W, 60);
+    g.addColorStop(0, "rgba(255,150,70,0.055)");
+    g.addColorStop(0.55, "rgba(255,170,100,0.02)");
+    g.addColorStop(1, "rgba(60,50,90,0.055)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    for (let i = 0; i < 18; i++) {
+      const baseX = 24 + ((i * 53) % 198);
+      const span = 200;
+      const baseY = 66 + ((i * 67) % span);
+      const x = baseX + Math.sin(elapsed * 0.22 + i * 1.7) * 7;
+      const y = 66 + (((baseY - elapsed * (3 + (i % 4))) % span) + span) % span;
+      const a = 0.10 + 0.10 * (0.5 + 0.5 * Math.sin(elapsed * 1.1 + i * 0.9));
+      ctx.globalAlpha = a;
+      ctx.fillStyle = "#ffdfae";
+      ctx.fillRect(Math.round(x), Math.round(y), 1 + (i % 2), 1 + (i % 2));
+    }
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, W, H);
+
+    // "what now?" hint before the door is knocked
+    goalEl.classList.toggle("show",
+      !cine.active && sceneState.name === "corridor" && !save.hasSave && !door.opened);
+
+    if (cine.active) { drawCine(); return; }
+
+    if (sceneState.name === "bedroom") {
+      // closing transition: dolly the camera onto the phone in her lap, then
+      // roll the lens and drive it through the screen — the phone never turns
+      const shotOn = phoneShot.active;
+      if (shotOn) {
+        ctx.save();
+        ctx.translate(W / 2, H / 2);
+        ctx.rotate(-phoneShot.flip);
+        ctx.scale(phoneShot.scale, phoneShot.scale);
+        ctx.translate(-phoneShot.cx, -phoneShot.cy);
+      }
+      ctx.drawImage(img.bedroom, 0, 0);
+      // the two sit on the bed's edge, one behind the other along the bed,
+      // both facing the room — unless they are still walking in
+      if (bedWalk.active) {
+        drawBedActors();
+      } else {
+        drawFrame("boy", BOY.sit_right[0], 118, 88);
+        drawFrame("girl", GIRL.sit_right[0], 118, girlY);
+      }
+      // her phone, portrait, lying flat on her lap and skewed by perspective;
+      // it moves with her while she scoots over
+      ctx.save();
+      ctx.globalAlpha = phoneAlpha;
+      ctx.translate(0, Math.round(girlY) - GIRL_SIT_Y);
+      const glow = ctx.createRadialGradient(146, 187, 2, 146, 187, 19);
+      glow.addColorStop(0, "rgba(127,216,206,0.26)");
+      glow.addColorStop(1, "rgba(127,216,206,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(126, 168, 40, 38);
+      const rows = [
+        [182, 145, 153], [183, 145, 153], [184, 144, 153], [185, 144, 152],
+        [186, 143, 152], [187, 143, 152], [188, 142, 151], [189, 142, 151],
+        [190, 141, 150], [191, 141, 150], [192, 140, 149], [193, 140, 149],
+      ];
+      ctx.fillStyle = "rgba(20,12,18,0.28)";
+      for (const [y, x0, x1] of rows) ctx.fillRect(x0 + 2, y + 2, x1 - x0 + 1, 1);
+      ctx.fillStyle = "#241f1b";
+      for (const [y, x0, x1] of rows) ctx.fillRect(x0, y, x1 - x0 + 1, 1);
+      ctx.fillStyle = "#7fd0c6";
+      for (const [y, x0, x1] of rows) {
+        if (y >= 184 && y <= 191) ctx.fillRect(x0 + 2, y, x1 - x0 - 3, 1);
+      }
+      ctx.fillStyle = "#a8e8dc";
+      ctx.fillRect(145, 184, 6, 1);
+      ctx.fillStyle = "#3b2f2a";
+      ctx.fillRect(146, 183, 3, 1);
+      ctx.fillStyle = "#4aa79f";
+      ctx.fillRect(141, 192, 3, 1);
+      ctx.restore();
+      if (shotOn) {
+        ctx.restore();
+        drawPhoneShotOverlay();
+        return;
+      }
+      if (fadeIn > 0) {
+        ctx.fillStyle = `rgba(6,4,7,${fadeIn})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+      if (fadeOut > 0) {
+        ctx.fillStyle = `rgba(6,4,7,${fadeOut})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+      const noDialog = !save.dialogOpen && !bedWalk.active;
+      promptEl.classList.toggle("show", noDialog);
+      if (noDialog) promptTextEl.textContent = "看手机";
+      return;
+    }
+
+    ctx.drawImage(img.corridor, 0, 0);
+
+    // warm light spilling out of the open 302 doorway
+    if (door.state > 0) {
+      const k = door.state / 3;
+      ctx.save();
+      const glow = ctx.createRadialGradient(DOOR.x + 32, 118, 18, DOOR.x + 32, 118, 108);
+      glow.addColorStop(0, `rgba(255,176,104,${0.15 * k})`);
+      glow.addColorStop(1, "rgba(255,176,104,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(DOOR.x - 76, 36, 216, 208);
+      const pool = ctx.createLinearGradient(0, 176, 0, 248);
+      pool.addColorStop(0, `rgba(255,186,120,${0.22 * k})`);
+      pool.addColorStop(1, "rgba(255,186,120,0)");
+      ctx.fillStyle = pool;
+      ctx.beginPath();
+      ctx.moveTo(DOOR.x + 5, 176);
+      ctx.lineTo(DOOR.x + 59, 176);
+      ctx.lineTo(DOOR.x + 88, 248);
+      ctx.lineTo(DOOR.x - 24, 248);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 301 door (closed, static)
+    ctx.drawImage(img.door301, 0, 0, 64, 128, 104, 48, 64, 128);
+
+    // girl behind the 302 door
+    if (girl.visible) {
+      drawShadow(GIRL_POS.x, GIRL_POS.y - 1, 30, 6, 0.25);
+      const gf = idleFrame(GIRL.idle_down, "down");
+      drawFrame("girl", gf, GIRL_POS.x - 24, GIRL_POS.y - 72);
+    }
+
+    // 302 door panel over the dark opening
+    let dx = DOOR.x;
+    if (save.event === 2) dx += Math.sin(elapsed * 55) * 1.2;
+    const sx = door.state * 64;
+    ctx.drawImage(img.door302, sx, 0, 64, 128, Math.round(dx), DOOR.y, 64, 128);
+
+    // player
+    drawShadow(player.x, player.y - 1, 28, 6, 0.28);
+    const frames = animFrames(BOY, player.dir, player.moving);
+    const fi = player.moving ? frames[player.frame % frames.length] : idleFrame(frames, player.dir);
+    drawFrame("boy", fi, player.x - 24, player.y - 72);
+
+    drawSunsetAtmosphere();
+
+    // interaction prompt
+    const home = sceneState.returning && near301();
+    const near = (sceneState.returning ? home : nearDoor()) && !save.dialogOpen;
+    promptEl.classList.toggle("show", near);
+    if (near) promptTextEl.textContent = sceneState.returning
+      ? "回家"
+      : (door.opened ? "进去" : "敲 302 的门");
+
+    if (debug) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(80, 220, 140, .8)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(WALK_MIN_X, WALK_MIN_Y, WALK_MAX_X - WALK_MIN_X, WALK_MAX_Y - WALK_MIN_Y);
+      ctx.strokeStyle = "rgba(80, 220, 140, .45)";
+      ctx.strokeRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
+      ctx.strokeStyle = "rgba(255, 180, 80, .8)";
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (fadeIn > 0) {
+      ctx.fillStyle = `rgba(6,4,7,${fadeIn})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (fadeOut > 0) {
+      ctx.fillStyle = `rgba(6,4,7,${fadeOut})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function loop(now) {
+    // the first rAF timestamp can be a hair earlier than performance.now(),
+    // so clamp dt at zero as well: a negative step freezes the girl's slide
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000 || 0));
+    last = now;
+    // Esc freezes the whole picture, including the clock the animations read.
+    if (paused) { requestAnimationFrame(loop); return; }
+    elapsed += dt;
+
+    // While the phone's picture is up it covers every pixel of this canvas, and
+    // redrawing it underneath is work nobody can see — on the same machine that
+    // is trying to render the game. Skip both until the frame goes away.
+    const covered = (gameEmbed.active && gameEmbed.ready) || storyEmbed.active;
+    if (!covered) {
+      update(dt);
+      draw();
+    }
+
+    if (debug) {
+      const tag = player.moving ? `walk_${player.dir}` : `idle_${player.dir}`;
+      debugEl.textContent =
+        `x=${player.x.toFixed(1)} y=${player.y.toFixed(1)}\n` +
+        `dir=${player.dir} frame=${player.frame} anim=${tag}\n` +
+        `event=${save.event} door=${door.state} opened=${door.opened}\n` +
+        `dialog=${save.dialogOpen ? "open" : "closed"} girl=${girl.visible}`;
+    }
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
+    if (storyEmbed.active) {
+      // Every key belongs to the school frame. If focus drifted back here, the
+      // press that reveals it is spent handing focus over — the next one lands.
+      if (document.activeElement !== storyFrameEl) focusStory();
+      return;
+    }
+    if (gameEmbed.active) {
+      // inside the frame the game owns the keys; it forwards E once the act is over
+      if (gameEmbed.result || gameEmbed.failed) {
+        // Only a finished segment leads home; a failed one just closes the
+        // frame and leaves the player where they were.
+        if (k === "e" || k === "enter") endGameEmbed(!!gameEmbed.result);
+      } else if (document.activeElement !== gameFrameEl) {
+        // The frame only hears the keyboard while it has focus. Anything that
+        // took the focus away — the browser's own chrome, a click that landed
+        // on this document instead — leaves every press swallowed here with no
+        // trace. Handing focus back costs this one press and nothing after it.
+        try { gameFrameEl.focus(); } catch (err) { /* frame is gone */ }
+      }
+      return;
+    }
+    if (k === "escape") {
+      paused = !paused;
+      pauseEl.classList.toggle("show", paused);
+      keys.clear();
+      return;
+    }
+    if (paused) return;
+    if (cine.active) return;
+    if (phoneShot.active) {
+      if (phoneShot.done && (k === "e" || k === "enter")) exitPhoneShot();
+      return;
+    }
+    if (k === "e" || k === "enter") { interact(); return; }
+    if (sceneState.done && k === "r") { restartAct(); return; }
+    if (k === "r") {
+      player.x = PLAYER_START.x; player.y = PLAYER_START.y; player.dir = "up";
+      door.state = 0; door.opened = false; save.hasSave = false; save.event = 0;
+      girl.visible = false; dialogue = null; save.dialogOpen = false;
+      dialogEl.classList.remove("show"); promptEl.classList.remove("show");
+      return;
+    }
+    if (k === "f2") { debug = !debug; debugEl.classList.toggle("show", debug); return; }
+    if (k === "tab") {
+      e.preventDefault();
+      if (bedWalk.active) return;   // the walk belongs to this cut
+      keys.clear();
+      setScene(sceneState.name === "corridor" ? "bedroom" : "corridor");
+      return;
+    }
+    keys.add(k);
+  });
+  window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
+  window.addEventListener("blur", () => keys.clear());
+  // A press that lands on this document instead of the frame means the frame
+  // lost focus. Take it back, so the keyboard is pointed at the game again.
+  window.addEventListener("pointerdown", () => {
+    if (storyEmbed.active) {
+      if (document.activeElement !== storyFrameEl) focusStory();
+      return;
+    }
+    if (!gameEmbed.active) return;
+    if (document.activeElement === gameFrameEl) return;
+    try { gameFrameEl.focus(); } catch (err) { /* frame is gone */ }
+  }, true);
+
+  loadAll().then(() => {
+    loadingEl.remove();
+    const q = new URLSearchParams(location.search);
+    if (q.has("player")) {
+      const [px, py] = q.get("player").split(",").map(Number);
+      if (Number.isFinite(px)) player.x = px;
+      if (Number.isFinite(py)) player.y = py;
+    }
+    if (q.has("dir")) player.dir = q.get("dir");
+    if (q.has("door")) setDoor(Number(q.get("door")));
+    if (q.get("girl") === "1") girl.visible = true;
+    if (q.get("scene") === "bedroom") setScene("bedroom", q.get("walk") === "1" ? { walk: true } : {});
+    if (q.get("phone") === "1" && sceneState.name === "bedroom") startPhoneShot();
+    if (q.get("opened") === "1") { door.opened = true; save.hasSave = true; save.event = 6; }
+    if (q.get("dialog") === "1") say("朱里", "……有事吗？", { hold: 0 });
+    if (q.get("event") === "1") startDoorEvent();
+    if (q.get("cine") === "1") startCine();
+    if (q.get("game") === "1") startGameEmbed();
+    if (q.get("end") === "1") { finishAct(); fadeOut = 1; }
+    if (q.get("ui") === "clean") {
+      dialogue = null;
+      save.dialogOpen = false;
+      dialogEl.classList.remove("show");
+    }
+    // the idle opening only plays on a plain load, not on debug links
+    const debugKeys = ["scene", "phone", "cine", "event", "dialog", "opened", "player", "door", "girl", "dir", "ui", "game", "walk", "end"];
+    if (!debugKeys.some((k) => q.has(k))) startOpening();
+    const ticks = Number(q.get("tick") || 0);
+    if (ticks > 0) document.documentElement.classList.add("instant");
+    for (let i = 0; i < ticks; i++) update(0.05);
+    draw();
+    last = performance.now();
+    if (q.get("freeze") !== "1") requestAnimationFrame(loop);
+    window.__ready = true;
+    window.__game = {
+      player, girl, door, save, say, setDoor, startDoorEvent,
+      embed: gameEmbed, startGameEmbed, endGameEmbed,
+      story: storyEmbed, startStoryFlow,
+      state: () => ({
+        scene: sceneState.name, girlY, girlSlideT: girlSlide.t,
+        walk: {
+          active: bedWalk.active,
+          boy: { mode: bedWalk.boy.mode, x: +bedWalk.boy.x.toFixed(1), y: +bedWalk.boy.y.toFixed(1) },
+          girl: { mode: bedWalk.girl.mode, x: +bedWalk.girl.x.toFixed(1), y: +bedWalk.girl.y.toFixed(1) },
+        },
+        dialogOpen: save.dialogOpen, shot: { ...phoneShot },
+        embed: { ...gameEmbed },
+        story: {
+          ...storyEmbed,
+          src: storyFrameEl.getAttribute("src") || "",
+          shown: storyHostEl.classList.contains("show"),
+          ready: storyHostEl.classList.contains("ready")
+        },
+        returning: sceneState.returning,
+        done: sceneState.done,
+        epilogue: { active: epilogue.active, done: epilogue.done, shown: epilogue.shown, len: EPILOGUE_TEXT.length },
+        fade: +fadeOut.toFixed(2),
+        line: dialogue ? dialogue.text : null
+      }),
+    };
+  }).catch((err) => {
+    loadingEl.textContent = "素材加载失败：" + err.message;
+    console.error(err);
+  });
+})();
+</script>
+</body>
+</html>
+

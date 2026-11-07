@@ -1,0 +1,304 @@
+/* 第三幕 · 晚间广播 — 界面
+ *
+ * 画布是 512×288 的像素画面，界面是普通 DOM。
+ * 唯一一条硬规矩：广播稿那条字幕在画布**下面**，不叠在画面上。
+ * 叠上去会盖住判定线附近——那正是玩家唯一必须盯着的地方。
+ */
+:root {
+  --paper: #f2e9da;
+  --her: #f2a8b8;
+  --me: #9acbdf;
+  --gold: #ffe9a8;
+  --line: rgba(242, 233, 218, .18);
+  --scrh: 64px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+body {
+  background: #07090a;
+  color: var(--paper);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #07090a;
+}
+
+#frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  position: relative;
+  container-type: size;
+}
+
+#screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  container-type: size;
+  overflow: hidden;
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  touch-action: none;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- 画布上的浮层 */
+
+#hud {
+  position: absolute;
+  left: 1em;
+  top: .8em;
+  right: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .8em;
+  pointer-events: none;
+  font-size: clamp(9px, 1.05cqw, 14px);
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+#hud.show { opacity: 1; }
+
+#leave {
+  pointer-events: auto;
+  font: inherit;
+  color: rgba(242, 233, 218, .72);
+  background: rgba(10, 13, 15, .78);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: .35em .8em;
+  cursor: pointer;
+  letter-spacing: .08em;
+  transition: background .14s ease, border-color .14s ease, color .14s ease;
+}
+#leave:hover { background: rgba(40, 50, 54, .95); border-color: rgba(242, 233, 218, .45); color: #fff; }
+
+/* ---------------------------------------------------------------- 对白（开场那几句） */
+
+#dlg {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 6%;
+  min-height: 15%;
+  padding: .8em 1.2em .95em;
+  background: rgba(15, 12, 16, .86);
+  border: 1px solid rgba(242, 233, 218, .22);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+  font-size: clamp(10px, 1.25cqw, 26px);
+  letter-spacing: .04em;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+#dlg.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+#dlg b {
+  display: block;
+  font-size: .82em;
+  font-weight: 400;
+  letter-spacing: .18em;
+  color: #c96b5a;
+  margin-bottom: 6px;
+}
+#dlg p {
+  margin: 0;
+  min-height: 1.75em;
+  font-size: clamp(13px, 1.75cqw, 34px);
+  line-height: 1.75;
+  color: #f2e9da;
+  white-space: pre-wrap;
+}
+#dlg small {
+  position: absolute;
+  right: .9em;
+  bottom: .55em;
+  font-size: .82em;
+  color: rgba(242, 233, 218, .55);
+}
+
+/* ---------------------------------------------------------------- 完成卡 / 收尾卡 */
+
+#card, #bye {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -46%);
+  z-index: 7;
+  min-width: 46%;
+  max-width: 82%;
+  padding: 1.3em 1.7em 1.2em;
+  background: rgba(9, 12, 14, .96);
+  border: 1px solid rgba(242, 233, 218, .2);
+  border-radius: 4px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s ease, transform .4s ease;
+  font-size: clamp(10px, 1.05cqw, 15px);
+}
+#card.show, #bye.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+#card h2, #bye h2 {
+  margin: 0 0 .7em;
+  font-size: 1.12em;
+  font-weight: 600;
+  letter-spacing: .14em;
+  color: rgba(242, 233, 218, .9);
+}
+#bye p, #card p {
+  margin: .3em 0;
+  color: rgba(242, 233, 218, .74);
+  line-height: 1.6;
+}
+#bye .note { font-size: .84em; color: rgba(242, 233, 218, .38); }
+
+#rank {
+  font-size: 3.4em;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--gold);
+  text-shadow: 0 0 22px rgba(255, 233, 168, .35);
+  margin: .1em 0 .15em;
+}
+#stat {
+  font-size: .92em;
+  color: rgba(242, 233, 218, .62) !important;
+  letter-spacing: .04em;
+}
+#card .score { margin-top: .5em; font-size: .9em; color: rgba(242, 233, 218, .5); }
+#card .score b {
+  font-size: 1.35em;
+  color: var(--paper);
+  letter-spacing: .06em;
+}
+
+.row {
+  display: flex;
+  gap: .6em;
+  justify-content: center;
+  margin-top: 1em;
+  flex-wrap: wrap;
+}
+.row button {
+  font: inherit;
+  color: var(--paper);
+  background: rgba(34, 42, 46, .95);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: .5em 1.15em;
+  cursor: pointer;
+  letter-spacing: .1em;
+  transition: background .14s ease, border-color .14s ease;
+}
+.row button:hover { background: rgba(52, 64, 70, .95); border-color: rgba(242, 233, 218, .45); }
+
+#loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #07090a;
+  color: rgba(242, 233, 218, .4);
+  font-size: clamp(10px, 1.1cqw, 15px);
+  letter-spacing: .2em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+#loading.show { opacity: 1; }
+
+/* ---------------------------------------------------------------- 广播稿字幕条 */
+
+/* 高度固定：它一跟着字数变高，画布就跟着缩放，正在下落的那一排音符
+   会在半路突然变位置。第二幕的工具栏踩过这个坑，这里一开始就写死。 */
+#script {
+  flex: 0 0 auto;
+  height: var(--scrh);
+  display: flex;
+  align-items: center;
+  gap: .9em;
+  padding: 0 2.2em;
+  background: #050407;
+  border-top: 1px solid rgba(242, 233, 218, .12);
+  font-size: clamp(12px, 1.2vw, 17px);
+  opacity: 0;
+  transition: opacity .3s ease;
+  overflow: hidden;
+}
+#script.show { opacity: 1; }
+
+#scrWho {
+  flex: 0 0 auto;
+  min-width: 4.2em;
+  padding: 0;
+  font-size: .82em;
+  font-weight: 400;
+  letter-spacing: .22em;
+  text-align: left;
+  color: #ffc98f;
+  background: none;
+  opacity: .92;
+}
+#scrWho[data-who="me"] { color: #ffc98f; }
+#scrWho[data-who="both"] { color: #ffc98f; }
+#scrWho:empty { opacity: 0; }
+
+#scrLine {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  color: #fff6e8;
+  font-size: 1em;
+  line-height: 1.6;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .9);
+  transition: opacity .3s ease;
+}
+#scrLine.past { opacity: .42; }
+
+#scrLine span {
+  color: rgba(242, 233, 218, .26);
+  transition: color .1s linear, text-shadow .1s linear;
+}
+#scrLine span.now {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(255, 255, 255, .45);
+}
+#scrLine span.done { color: rgba(242, 233, 218, .88); }
+#scrLine span.partial { color: rgba(242, 233, 218, .62); }
+#scrLine span.missed { color: rgba(255, 138, 128, .5); }
+/* 她替你念的那半句，颜色就是她的颜色——不用写「她救了你」 */
+#scrLine span.covered {
+  color: var(--her);
+  text-shadow: 0 0 10px rgba(242, 168, 184, .35);
+}
+
+@media (max-width: 720px) {
+  #script { padding: 0 1em; gap: .5em; }
+  #scrWho { min-width: 3.2em; }
+}

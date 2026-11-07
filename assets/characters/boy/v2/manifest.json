@@ -1,0 +1,72 @@
+{
+  "character": "boy",
+  "frameWidth": 48,
+  "frameHeight": 72,
+  "sheet": "boy_sheet_v2.png",
+  "frames": 31,
+  "animations": {
+    "idle_down": [
+      0,
+      1
+    ],
+    "idle_left": [
+      2
+    ],
+    "idle_right": [
+      3
+    ],
+    "idle_up": [
+      4
+    ],
+    "walk_down": [
+      5,
+      6,
+      7,
+      8
+    ],
+    "walk_left": [
+      9,
+      10,
+      11,
+      12
+    ],
+    "walk_right": [
+      13,
+      14,
+      15,
+      16
+    ],
+    "walk_up": [
+      17,
+      18,
+      19,
+      20
+    ],
+    "wave": [
+      23
+    ],
+    "talk": [
+      24
+    ],
+    "pickup": [
+      25
+    ],
+    "lean_left": [
+      26
+    ],
+    "sit_left": [
+      27
+    ],
+    "offer": [
+      28
+    ],
+    "shy": [
+      29
+    ],
+    "lean_back": [
+      30
+    ]
+  },
+  "framePath": "frames/{index:02d}.png",
+  "feetBaseline": 70
+}

@@ -1,0 +1,582 @@
+/* 第三幕 · 校园日常 — 界面
+ *
+ * 和 act2 / act3 / act4 同一套：画布铺满视口并保持 16:9，
+ * 对白、目标、面板都是画布**上面**的 DOM 层，但绝不盖住要看的球路／轨道——
+ * 这里没有轨道，所以猜词面板可以整块盖上来。
+ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #241f28;
+  color: #fff0de;
+  font-family: "Microsoft YaHei", system-ui, sans-serif;
+}
+
+#stage { position: fixed; inset: 0; overflow: hidden; }
+
+#scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100vw, 177.7778dvh);
+  height: max(100dvh, 56.25vw);
+  transform: translate(-50%, -50%);
+  image-rendering: pixelated;
+}
+
+[hidden] { display: none !important; }
+
+#fade {
+  position: absolute;
+  inset: 0;
+  background: #1b1720;
+  opacity: 1;
+  pointer-events: none;
+}
+
+#chapter {
+  position: absolute;
+  left: 22px;
+  top: 18px;
+  font-size: 15px;
+  letter-spacing: .12em;
+  text-shadow: 0 2px 5px #0009;
+}
+
+/* ---------------------------------------------------------------- 目标 */
+
+.obj {
+  position: absolute;
+  right: 22px;
+  top: 16px;
+  max-width: min(360px, 40vw);
+  padding: 9px 14px 10px;
+  background: #211d29e8;
+  border: 1px solid #bd9b80;
+  border-left: 3px solid #ffd497;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .25s, transform .25s;
+  pointer-events: none;
+}
+.obj.show { opacity: 1; transform: none; }
+.obj b {
+  display: block;
+  font-size: 12px;
+  letter-spacing: .18em;
+  color: #d8b489;
+  margin-bottom: 3px;
+}
+.obj span { display: block; font-size: clamp(14px, 1.25vw, 17px); line-height: 1.45; }
+
+/* ---------------------------------------------------------------- 提示 */
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: 19%;
+  transform: translate(-50%, 6px);
+  padding: 6px 16px;
+  font-size: clamp(14px, 1.2vw, 17px);
+  background: #211d29e8;
+  border: 1px solid #bd9b80;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity .18s, transform .18s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.hint.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------------------------------------------------------------- 对白 */
+
+.dlg {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  bottom: 2.5%;
+  min-height: 150px;
+  padding: 20px 30px 26px;
+  background: linear-gradient(180deg, #261f2cea, #17141df7);
+  border: 3px solid #dbb58d;
+  box-shadow: 0 9px 0 #17121a, 0 0 0 2px #32242a, 0 15px 38px #0009;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .18s, transform .18s;
+  pointer-events: none;
+}
+.dlg.show { opacity: 1; transform: none; pointer-events: auto; }
+.dlg b {
+  display: block;
+  width: max-content;
+  min-width: 108px;
+  margin: -6px 0 6px;
+  padding: 3px 16px 5px;
+  color: #ffe6c7;
+  background: #704d48;
+  border-left: 4px solid #ffd497;
+  font-size: clamp(18px, 1.7vw, 24px);
+  line-height: 1.3;
+}
+.dlg p {
+  margin: 8px 0 0;
+  color: #fff4e7;
+  font-size: clamp(22px, 2.4vw, 34px);
+  line-height: 1.4;
+  letter-spacing: .02em;
+  text-shadow: 0 2px 2px #0008;
+}
+.dlg small {
+  position: absolute;
+  right: 20px;
+  bottom: 10px;
+  color: #ddc7b4;
+  font-size: clamp(12px, 1vw, 16px);
+}
+
+/* ---------------------------------------------------------------- 目录 / 结果卡 */
+
+.hub, .card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, 92vw);
+  padding: 26px 30px 24px;
+  background: #211d29f4;
+  border: 1px solid #c8a17d;
+  box-shadow: 0 18px 45px #0009;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s;
+}
+.hub.show, .card.show { opacity: 1; pointer-events: auto; }
+.hub h1, .card h2 { margin: 0 0 6px; font-size: clamp(22px, 2.2vw, 30px); }
+.hub .sub { margin: 0 0 18px; color: #c9b19b; font-size: clamp(13px, 1.1vw, 16px); letter-spacing: .1em; }
+.hub ul { list-style: none; margin: 0; padding: 0; }
+.hub li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 12px;
+  margin-bottom: 8px;
+  background: #2a2333;
+  border-left: 3px solid #6b5a4a;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.hub li:hover { background: #342b3f; }
+.hub li.playable { border-left-color: #ffd497; }
+.hub li.done { border-left-color: #8fbf8a; }
+.hub li.locked { cursor: default; opacity: .55; }
+.hub li.locked:hover { background: #2a2333; }
+.hub li .day { color: #c9b19b; font-size: clamp(12px, 1vw, 14px); min-width: 4.2em; }
+.hub li .name { font-size: clamp(16px, 1.4vw, 19px); }
+.hub li .tag { margin-left: auto; font-size: clamp(11px, .95vw, 13px); color: #a89786; }
+
+.card p { font-size: clamp(16px, 1.5vw, 20px); line-height: 1.7; margin: 10px 0 0; }
+
+.row { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+
+button {
+  font: inherit;
+  font-size: clamp(15px, 1.3vw, 18px);
+  color: #fff0de;
+  background: #664d4d;
+  border: 1px solid #c8a17d;
+  border-radius: 4px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { background: #956651; }
+button:focus-visible { outline: 1px solid #ffe2b4; }
+button:disabled { opacity: .38; cursor: default; }
+
+/* ---------------------------------------------------------------- 猜词面板 */
+
+.wg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 14, 20, .55);
+  opacity: 0;
+  transition: opacity .22s;
+}
+.wg.show { opacity: 1; }
+
+.wg-card {
+  width: min(720px, 92vw);
+  max-height: 94%;
+  overflow: auto;
+  padding: 16px 22px 20px;
+  background: linear-gradient(180deg, #2b2433f7, #1d1924fa);
+  border: 3px solid #dbb58d;
+  box-shadow: 0 14px 40px #000a;
+}
+
+.wg-head { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  background: #241f2c;
+  border: 1px solid #4a3d4f;
+  border-radius: 3px;
+  opacity: .5;
+  transition: opacity .18s, border-color .18s, background .18s;
+}
+.chip.on {
+  opacity: 1;
+  background: #3a3040;
+  border-color: #ffd497;
+}
+.chip b { font-size: clamp(13px, 1.15vw, 16px); font-weight: 400; color: #f3e4d2; }
+
+.face {
+  display: block;
+  width: 54px;
+  height: 40px;
+  background-repeat: no-repeat;
+  background-position: 0 -6px;
+  image-rendering: pixelated;
+  flex: none;
+}
+/* 精灵表是 48×72 一帧，这里放大 1.125 倍（54×81）只取头肩那一块。
+ * 宽度必须等于「帧数 × 54」——写成别的数，浏览器会把整张表缩放，
+ * 每帧就变成不到 54 宽，取出来的窗口跨到隔壁帧，头像就成了两个小人的拼贴。
+ * v2 表：男 31 帧、女 33 帧、闺蜜 36 帧。 */
+.f-girl { background-image: url(../assets/characters/girl/v2/girl_sheet_v2.png); background-size: 1782px 81px; }
+.f-boy { background-image: url(../assets/characters/boy/v2/boy_sheet_v2.png); background-size: 1674px 81px; }
+.f-friend { background-image: url(../assets/characters/friend/v2/friend_sheet_v2.png); background-size: 1944px 81px; }
+
+.wg-round {
+  text-align: center;
+  color: #c9b19b;
+  font-size: clamp(11px, 1vw, 13px);
+  letter-spacing: .22em;
+  margin-bottom: 8px;
+}
+
+.wg-host {
+  text-align: center;
+  font-size: clamp(16px, 1.6vw, 21px);
+  color: #ffe6c7;
+  min-height: 1.7em;
+  margin-bottom: 10px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.wg-host.show { opacity: 1; }
+
+.wg-clues {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  min-height: 86px;
+}
+.wg-clues li {
+  position: relative;
+  padding: 6px 8px 6px 22px;
+  font-size: clamp(15px, 1.5vw, 19px);
+  line-height: 1.5;
+  color: #f6ecdf;
+  animation: clueIn .22s ease-out;
+}
+.wg-clues li::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 15px;
+  width: 5px;
+  height: 5px;
+  background: #ffd497;
+}
+@keyframes clueIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.wg-say {
+  min-height: 1.5em;
+  text-align: center;
+  font-size: clamp(14px, 1.3vw, 17px);
+  color: #d9c6b2;
+  opacity: 0;
+  transition: opacity .15s;
+  margin-bottom: 8px;
+}
+.wg-say.show { opacity: 1; }
+
+.wg-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.wg-opts button {
+  padding: 12px 10px;
+  font-size: clamp(16px, 1.5vw, 20px);
+  background: #3a3040;
+  border: 1px solid #7d6680;
+  letter-spacing: .06em;
+}
+.wg-opts button:hover:not(:disabled) { background: #55435f; border-color: #ffd497; }
+
+.wg-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.wg-tools input {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: clamp(14px, 1.3vw, 17px);
+  color: #fff0de;
+  background: #1b1722;
+  border: 1px solid #6b5a6e;
+  border-radius: 3px;
+}
+.wg-tools input::placeholder { color: #8b7c86; }
+#wgHint { background: #4a3d55; }
+
+/* ---------------------------------------------------------------- 线索本 */
+
+#nbBtn {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  padding: 5px 13px;
+  font-size: clamp(12px, 1.05vw, 14px);
+  letter-spacing: .06em;
+  color: #d8c9bb;
+  background: #211d29e8;
+  border: 1px solid #6b5a6a;
+  border-radius: 3px;
+}
+#nbBtn:hover { background: #342b3f; border-color: #c8a17d; }
+#nbBtn b { color: #7d6f74; font-weight: 400; margin-left: 2px; }
+#nbBtn.has b { color: #ffd497; }
+
+.msg {
+  position: absolute;
+  left: 50%;
+  top: 52px;
+  transform: translate(-50%, -6px);
+  max-width: min(430px, 82vw);
+  padding: 8px 15px 9px;
+  background: #211d29f2;
+  border: 1px solid #bd9b80;
+  border-left: 3px solid #9ec4d8;
+  font-size: clamp(13px, 1.2vw, 16px);
+  line-height: 1.5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.msg.show { opacity: 1; transform: translate(-50%, 0); }
+.msg b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: .8em;
+  font-weight: 400;
+  letter-spacing: .16em;
+  color: #a9c9da;
+}
+
+.nb {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 压得比猜词面板更暗一点：线索本是「低头看本子」，
+     背景里露出来的半截腿会让人以为画错了。 */
+  background: rgba(16, 12, 18, .72);
+  opacity: 0;
+  transition: opacity .2s;
+}
+.nb.show { opacity: 1; }
+
+.nb-card {
+  display: flex;
+  flex-direction: column;
+  width: min(600px, 92vw);
+  /* 面板要够高。矮的时候下沿正好卡在她们脚踝上面，
+     背景里露出两双鞋，看着像画错了。 */
+  min-height: min(440px, 70vh);
+  max-height: 86%;
+  overflow: auto;
+  padding: 18px 22px 18px;
+  background: linear-gradient(180deg, #2b2433f7, #1d1924fa);
+  border: 3px solid #dbb58d;
+  box-shadow: 0 14px 40px #000a;
+}
+/* 按钮钉在底部，中间空出来的那一块就当是本子还没写满的页 */
+.nb-card .row { margin-top: auto; }
+.nb-card h3 {
+  margin: 0 0 8px;
+  font-size: clamp(17px, 1.6vw, 21px);
+  font-weight: 400;
+  letter-spacing: .1em;
+  color: #ffe6c7;
+}
+.nb-legend {
+  margin: 0 0 14px;
+  font-size: clamp(11px, 1vw, 13px);
+  line-height: 1.7;
+  color: #a89786;
+}
+.nb-legend i { font-style: normal; margin-right: 3px; }
+.nb-legend .k-see { color: #ffd497; }
+.nb-legend .k-rem { color: #a9c9da; }
+.nb-legend .k-gue { color: #c9a0c0; }
+
+#nbList { list-style: none; margin: 0; padding: 0; }
+#nbList li {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 8px 8px 8px 12px;
+  margin-bottom: 6px;
+  background: #241f2c;
+  border-left: 3px solid #6b5a6a;
+  font-size: clamp(14px, 1.35vw, 17px);
+  line-height: 1.5;
+  animation: clueIn .22s ease-out;
+}
+#nbList li i {
+  flex: none;
+  width: 4.6em;
+  font-style: normal;
+  font-size: .82em;
+  letter-spacing: .04em;
+}
+#nbList li span { flex: 1; color: #f6ecdf; }
+#nbList li em {
+  flex: none;
+  font-style: normal;
+  font-size: .76em;
+  color: #8b7c86;
+  white-space: nowrap;
+}
+#nbList li.k-see { border-left-color: #ffd497; }
+#nbList li.k-see i { color: #ffd497; }
+#nbList li.k-rem { border-left-color: #7fa6bd; }
+#nbList li.k-rem i { color: #a9c9da; }
+/* 猜的那一类故意做成虚的：一眼就看得出它和上面两类不是一回事 */
+#nbList li.k-gue { border-left: 3px dashed #8a6d86; background: #221d29; }
+#nbList li.k-gue i { color: #c9a0c0; }
+#nbList li.k-gue span { color: #cdbfc9; }
+
+.nb-empty {
+  margin: 4px 0 0;
+  padding: 14px 2px;
+  color: #8b7c86;
+  font-size: clamp(13px, 1.2vw, 16px);
+}
+
+/* ---------------------------------------------------------------- 体育活动 */
+
+/* 顶上一条细提示就够。球在下半场滚，不能像猜词面板那样整块盖上来。 */
+.bg-hud {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translate(-50%, -6px);
+  min-width: 250px;
+  padding: 6px 16px 8px;
+  text-align: center;
+  background: #211d29e8;
+  border: 1px solid #bd9b80;
+  border-top: 3px solid #ffd497;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.bg-hud.show { opacity: 1; transform: translate(-50%, 0); }
+.bg-hud b {
+  display: block;
+  font-size: clamp(13px, 1.15vw, 16px);
+  font-weight: 400;
+  letter-spacing: .18em;
+  color: #ffd497;
+}
+.bg-hud span {
+  display: block;
+  margin-top: 2px;
+  font-size: clamp(11px, .95vw, 13px);
+  color: #d3c0ad;
+}
+
+/* 触控区放在右侧、抬到对白框上面；按钮给到 100px 以上，手指按得住。 */
+#bgCtl {
+  position: absolute;
+  right: 22px;
+  bottom: 26%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 2;
+}
+.bg-pick { display: flex; gap: 6px; }
+.bg-pick button {
+  padding: 5px 12px;
+  font-size: clamp(12px, 1.05vw, 14px);
+  background: #2a2333e8;
+  border-color: #6b5a6a;
+}
+.bg-pick button.on { background: #8a6a4f; border-color: #ffd497; color: #fff4e7; }
+#bgAct {
+  width: clamp(84px, 9vw, 118px);
+  height: clamp(84px, 9vw, 118px);
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #ffd497;
+  background: #5b4347e8;
+  font-size: clamp(13px, 1.15vw, 16px);
+  line-height: 1.5;
+  touch-action: none;
+  user-select: none;
+}
+#bgAct:active { background: #8a6a4f; }
+
+@media (max-width: 700px) {
+  #chapter { left: 12px; top: 10px; font-size: 11px; }
+  .obj { right: 12px; top: 34px; max-width: 60vw; padding: 6px 10px 7px; }
+  .dlg { left: 2%; right: 2%; bottom: 1.5%; min-height: 140px; padding: 14px 16px 26px; border-width: 2px; }
+  .dlg b { font-size: 16px; min-width: 78px; }
+  .dlg p { font-size: clamp(19px, 5vw, 25px); }
+  .dlg small { font-size: 11px; }
+  .hint { bottom: 24%; font-size: 13px; }
+  .wg-card { padding: 12px 12px 14px; }
+  .wg-opts { grid-template-columns: 1fr; }
+  .face { width: 44px; height: 34px; }
+  .f-girl { background-size: 1452px 66px; }
+  .f-boy { background-size: 1364px 66px; }
+  .f-friend { background-size: 1584px 66px; }
+  .chip { padding: 3px 8px 3px 3px; gap: 5px; }
+  .hub, .card { padding: 18px 16px; }
+  #nbBtn { top: 8px; font-size: 11px; padding: 4px 9px; }
+  .msg { top: 40px; font-size: 12px; padding: 6px 10px 7px; }
+  .nb-card { padding: 12px 12px 14px; }
+  .bg-hud { top: 30px; min-width: 210px; padding: 4px 10px 6px; }
+  #bgCtl { right: 10px; bottom: 28%; gap: 5px; }
+  #bgAct { width: 76px; height: 76px; font-size: 11px; }
+  .bg-pick button { padding: 4px 8px; font-size: 11px; }
+  #nbList li { flex-wrap: wrap; gap: 2px 8px; padding: 7px 7px 7px 10px; }
+  #nbList li i { width: 100%; }
+  #nbList li em { margin-left: auto; }
+}

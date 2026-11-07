@@ -1,0 +1,593 @@
+/* 第二幕 · 黑板报 — 界面
+ *
+ * 画布是 512×288 的像素画面，界面是普通 DOM。
+ * 关键一条：工具栏放在画布**下面**，不叠在画面上。
+ * 叠上去的版本会把黑板左下角挡住——那正好是装饰区，玩家会发现自己画不进去。
+ */
+:root {
+  --paper: #f2e9da;
+  --chalk: #f4ecdd;
+  --panel: rgba(15, 12, 16, .86);
+  --line: rgba(242, 233, 218, .22);
+  --accent: #c96b5a;
+  --barh: 58px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+body {
+  background: #0b0a0d;
+  color: var(--paper);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #4e3e49;
+}
+/* 图案面板展开时把画布压小一点，而不是盖在画面上——
+   面板要盖的正好是装饰区，那是最需要看得见的地方 */
+
+/* 画布完整可见——这是块画板，不能像第一幕那样裁边 */
+#frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: #4e3e49;
+  /* 画布按「剩下多少空间」自己定尺寸：图案面板展开时它跟着变小，
+     不用在外面算 --barh + 面板高度这种一改就错的数 */
+  container-type: size;
+}
+
+#screen {
+  position: relative;
+  width: min(100cqw, calc(100cqh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  container-type: size;
+  overflow: hidden;
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* 走廊对白和走向黑板的镜头铺满视口；进入绘画后恢复完整可见的画板。 */
+#stage.cinematic { overflow: hidden; }
+#stage.cinematic #frame {
+  flex: 0 0 100dvh;
+  width: 100vw;
+  height: 100dvh;
+  display: block;
+  overflow: hidden;
+}
+#stage.cinematic #screen {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100vw, 177.7778dvh);
+  height: max(100dvh, 56.25vw);
+  aspect-ratio: 16 / 9;
+  transform: translate(-50%, -50%);
+}
+
+/* ---------------------------------------------------------------- 画面上的浮层 */
+
+#prog {
+  position: absolute;
+  right: 1.1em;
+  top: .9em;
+  display: flex;
+  gap: .35em;
+  pointer-events: none;
+  font-size: clamp(9px, 1.05cqw, 15px);
+  opacity: 0;
+  transition: opacity .35s ease;
+}
+#prog.show { opacity: 1; }
+#prog span {
+  padding: .2em .55em .2em 1.35em;
+  position: relative;
+  background: rgba(14, 12, 16, .78);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  letter-spacing: .1em;
+  color: rgba(242, 233, 218, .5);
+}
+#prog span::before {
+  content: "";
+  position: absolute;
+  left: .45em;
+  top: 50%;
+  width: .42em;
+  height: .42em;
+  margin-top: -.21em;
+  border-radius: 50%;
+  background: rgba(242, 233, 218, .18);
+}
+#prog span.near { color: rgba(255, 213, 171, .92); }
+#prog span.near::before { background: rgba(255, 213, 171, .6); }
+#prog span.done { color: #cfe8c0; border-color: rgba(180, 220, 160, .45); }
+#prog span.done::before { background: #b4dca0; box-shadow: 0 0 6px rgba(180, 220, 160, .8); }
+
+/* ---------------------------------------------------------------- 底部工具条 */
+
+#bar {
+  height: var(--barh);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  background: #14121a;
+  border-top: 1px solid rgba(242, 233, 218, .1);
+  font-size: clamp(11px, 1.05vw, 14px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .35s ease;
+}
+#bar.show { opacity: 1; pointer-events: auto; }
+/* 完成之后整条工具带都不需要了。用 display 而不是高度过渡：
+   画布尺寸一变，正在进行的手绘坐标就会漂，宁可硬切一下 */
+#stage.fin #bar, #stage.fin #pats { display: none; }
+
+button {
+  font: inherit;
+  color: var(--paper);
+  background: rgba(34, 30, 38, .95);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 5px 9px;
+  cursor: pointer;
+  line-height: 1.1;
+  transition: background .14s ease, border-color .14s ease;
+}
+button:hover { background: rgba(64, 52, 58, .95); border-color: rgba(242, 233, 218, .45); }
+button:disabled { opacity: .38; cursor: default; }
+button:disabled:hover { background: rgba(34, 30, 38, .95); border-color: var(--line); }
+
+#tools { display: flex; gap: 3px; }
+#tools button { display: flex; align-items: baseline; gap: 4px; padding: 5px 7px; }
+#tools button i { font-style: normal; font-size: .78em; opacity: .4; }
+#tools button.on {
+  background: rgba(120, 86, 66, .95);
+  border-color: rgba(255, 226, 179, .85);
+  color: #fff6e2;
+}
+#tools button.on i { opacity: .7; }
+
+/* 底稿开关：它不改「画什么」，只改「看不看得见那层淡线」，所以和工具按钮分开一条 */
+#ghost { margin-left: 7px; position: relative; }
+#ghost::before {
+  content: "";
+  position: absolute;
+  left: -5px; top: 6px; bottom: 6px;
+  width: 1px;
+  background: rgba(242, 233, 218, .14);
+}
+
+#widths { display: flex; gap: 3px; align-items: center; }
+#widths button { width: 26px; height: 26px; padding: 0; display: grid; place-items: center; }
+#widths button span { display: block; background: var(--chalk); border-radius: 50%; }
+#widths button.on { border-color: rgba(255, 226, 179, .85); background: rgba(120, 86, 66, .9); }
+
+#palette { display: flex; gap: 6px; margin-left: auto; }
+#palette button {
+  width: 24px; height: 24px; padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, .5);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16);
+}
+#palette button.on {
+  border-color: #fff6e2;
+  box-shadow: 0 0 0 2px rgba(255, 246, 226, .4), inset 0 0 0 1px rgba(0, 0, 0, .3);
+}
+/* 她递粉笔：那支亮一下，但不替玩家选 */
+#palette button.offered { animation: offered 1.1s ease-in-out infinite; }
+@keyframes offered {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 246, 226, .18); }
+  50% { box-shadow: 0 0 0 5px rgba(255, 246, 226, .5); }
+}
+
+/* 状态位：还差什么 */
+#status {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.5em;
+}
+#hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(242, 233, 218, .55);
+  letter-spacing: .06em;
+}
+
+/* ---------------------------------------------------------------- 字幕：像素小人 + 对话框 */
+
+/* 画板期间的对白：左边朱里、右边和臣，中间一个对话框，整条在画布**下面**。
+   为什么放在画布外：这块板就是玩家正在画的东西，任何浮层都会盖住装饰区——
+   那正好是要放图案的地方。宁可把画布压小一点，也不压板子。
+   高度固定 96px：它一跟着字数变，画布就跟着缩放，正在拖的那一笔坐标当场漂
+   （#bar 踩过这个坑，§9.2 第 6 条）。 */
+#subs {
+  flex: 0 0 auto;
+  height: 96px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 26px;
+  padding: 0 2.4em;
+  font-size: clamp(12px, 1.15vw, 15px);
+  background: #0a0910;
+  border-top: 1px solid rgba(242, 233, 218, .07);
+  opacity: 0;
+  transition: opacity .28s ease, height .34s ease, border-top-color .34s ease;
+  pointer-events: none;
+  overflow: hidden;
+}
+#subs.show { opacity: 1; }
+/* 结尾那几句对白也走这条（见 scene2.js 的 talkLines），所以「完成」时不能直接
+   display:none——那会把结尾一起吃掉。等对白读完、加上 .over，它才让出高度，
+   画布顺手长回去。这时候没人画画，高度过渡不怕坐标漂。 */
+#stage.over #subs { height: 0; opacity: 0; border-top-color: transparent; }
+
+/* 小人：48×72 的原帧按 2 倍铺，元素只露上面 44 行（头 + 肩），
+   底边用遮罩虚掉——看着像从下面探出来，而不是被一刀切平。
+   不说话的那个压暗，一眼能看出这句是谁在说。 */
+#subs .pix {
+  position: relative;
+  flex: 0 0 auto;
+  width: 96px;
+  height: 88px;
+  opacity: .46;
+  filter: saturate(.62) brightness(.82);
+  transition: opacity .2s ease, filter .2s ease;
+}
+#subs .pix i {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  animation: pixblink 5.6s steps(1, end) infinite;
+  -webkit-mask-image: linear-gradient(#000 74%, transparent 100%);
+  mask-image: linear-gradient(#000 74%, transparent 100%);
+}
+/* background-size 是**整张表**的尺寸，不是单帧的：25 帧 × 48 = 1200，
+   按 2 倍铺就是 2400×144；换帧只改 background-position 的 -96px。
+   第一版写成 96px 144px，等于把整张表压进一格，看起来是一道竖条纹。 */
+#subs .pix.her i {
+  background-image: url("../assets/characters/girl/girl_sheet.png");
+  background-size: 2400px 144px;
+}
+#subs .pix.me i {
+  background-image: url("../assets/characters/boy/boy_sheet.png");
+  background-size: 2208px 144px;
+  animation-delay: 2.3s;   /* 两个人错开眨眼，不然像同一个木偶 */
+}
+#subs[data-who="朱里"] .pix.her,
+#subs[data-who="我"] .pix.me { opacity: 1; filter: none; }
+
+@keyframes pixblink {
+  0%, 96% { background-position: 0 0; }
+  97%, 100% { background-position: -96px 0; }
+}
+
+/* 对话框。尾巴是个转 45° 的方块，指到说话的那个人那边。 */
+#subs .bubble {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 46em;
+  margin-bottom: 14px;
+  padding: .55em 1.05em .6em;
+  display: flex;
+  align-items: baseline;
+  gap: .5em;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+  transition: opacity .18s ease;
+}
+/* 两句之间那 0.3 秒：只把对话框压暗，整条不动。
+   第一版是把整条字幕藏起来，换成像素小人之后就成了「两个人一闪一闪」，
+   像信号断了。 */
+#subs.quiet .bubble { opacity: .35; }
+#subs .bubble::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  bottom: 13px;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border-left: 1px solid rgba(242, 233, 218, .18);
+  border-bottom: 1px solid rgba(242, 233, 218, .18);
+  transform: rotate(45deg);
+}
+#subs[data-who="我"] .bubble::before {
+  left: auto;
+  right: -6px;
+  transform: rotate(-135deg);
+}
+#subs b {
+  flex: 0 0 auto;
+  font-weight: 400;
+  letter-spacing: .18em;
+  color: var(--accent);
+}
+#subs b::after { content: "："; opacity: .5; }
+#subs[data-who="我"] b { color: var(--accent); }
+#subs span {
+  min-width: 0;
+  color: var(--paper);
+  letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#finish { padding: 7px 14px; letter-spacing: .1em; flex: 0 0 auto; }
+#finish.ready {
+  background: rgba(150, 96, 64, .96);
+  border-color: rgba(255, 226, 179, .9);
+  color: #fff6e2;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 226, 179, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 226, 179, .16); }
+}
+
+/* ---------------------------------------------------------------- 图案面板 */
+
+#pats {
+  flex: 0 0 auto;
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: #191620;
+  border-top: 1px solid rgba(242, 233, 218, .1);
+}
+#stage.pats #pats { display: flex; }
+#pats button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  /* 按钮底色做成黑板绿：图案本来就是画在深绿上的，白底上会看不出明暗 */
+  background: rgba(72, 100, 90, .92);
+  border: 1px solid rgba(242, 233, 218, .14);
+}
+#pats button:hover { background: rgba(88, 118, 106, .95); border-color: rgba(255, 226, 179, .5); }
+#pats button canvas {
+  display: block;
+  width: 26px;
+  height: 26px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+#pats button.on {
+  border-color: rgba(255, 226, 179, .95);
+  box-shadow: 0 0 0 2px rgba(255, 226, 179, .3);
+  background: rgba(96, 126, 112, .96);
+}
+#pats em {
+  font-style: normal;
+  font-size: .74em;
+  letter-spacing: .12em;
+  color: rgba(242, 233, 218, .38);
+  padding: 0 4px 0 8px;
+  align-self: center;
+}
+#pats i {
+  width: 1px;
+  align-self: stretch;
+  margin: 9px 3px;
+  background: rgba(242, 233, 218, .1);
+}
+
+/* ---------------------------------------------------------------- 对白 */
+
+#dlg {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 6%;
+  min-height: 15%;
+  padding: .8em 1.2em .95em;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .22s ease, transform .22s ease;
+  pointer-events: none;
+  font-size: clamp(10px, 1.25cqw, 26px);
+  letter-spacing: .04em;
+}
+#dlg.show { opacity: 1; transform: translateY(0); pointer-events: auto; cursor: pointer; }
+#dlg b {
+  display: block;
+  color: var(--accent);
+  font-size: .82em;
+  font-weight: 400;
+  letter-spacing: .18em;
+  margin-bottom: 6px;
+}
+#dlg p {
+  margin: 0;
+  color: var(--paper);
+  font-size: clamp(13px, 1.75cqw, 34px);
+  line-height: 1.75;
+  min-height: 1.75em;
+  white-space: pre-wrap;
+}
+#dlg small {
+  position: absolute;
+  right: .9em;
+  bottom: .55em;
+  color: rgba(242, 233, 218, .55);
+  font-size: .82em;
+}
+
+/* ---------------------------------------------------------------- 离开 */
+
+/* 画板期间常驻左上角。做得低对比：它是条退路，不是主按钮，
+   但不能藏起来——玩家不该为了「不想画了」去关标签页。
+   位置压着板框左上角，避不开，所以只占 50×24 左右，字号也跟着画布走。 */
+#leave {
+  position: absolute;
+  left: 1.1em;
+  top: .9em;
+  z-index: 6;
+  padding: .34em .72em;
+  font-size: clamp(10px, 1.02cqw, 14px);
+  letter-spacing: .14em;
+  color: rgba(242, 233, 218, .58);
+  background: rgba(12, 10, 14, .72);
+  border: 1px solid rgba(242, 233, 218, .16);
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease, color .14s ease, border-color .14s ease;
+}
+#leave.show { opacity: 1; pointer-events: auto; }
+#leave:hover { color: #fff6e2; border-color: rgba(255, 226, 179, .72); }
+#stage.fin #leave { display: none; }
+
+/* 走了之后的收尾卡。和完成卡同一套骨架，边框更冷一点——
+   它不是「你做到了」，是「先歇会儿」。 */
+#bye {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -46%);
+  z-index: 7;
+  min-width: 44%;
+  padding: 1.25em 1.6em 1.15em;
+  background: rgba(12, 10, 14, .96);
+  border: 1px solid rgba(242, 233, 218, .2);
+  border-radius: 4px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .45s ease, transform .45s ease;
+  font-size: clamp(11px, 1.15cqw, 16px);
+}
+#bye.show { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
+#bye h2 {
+  margin: 0 0 .55em;
+  font-size: 1.3em;
+  letter-spacing: .18em;
+  font-weight: 500;
+  color: #ffe7cd;
+}
+#bye p { margin: 0 0 .55em; color: rgba(242, 233, 218, .76); }
+#bye p.note { color: rgba(242, 233, 218, .4); font-size: .9em; margin-bottom: 1.1em; }
+#bye .row { display: flex; gap: .6em; justify-content: center; }
+#bye #resume { border-color: rgba(255, 226, 179, .55); }
+#bye #quit { color: rgba(242, 233, 218, .6); }
+
+/* ---------------------------------------------------------------- 完成卡 */
+
+#card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -46%);
+  min-width: 42%;
+  padding: 1.2em 1.5em 1.1em;
+  background: rgba(12, 10, 14, .95);
+  border: 1px solid rgba(255, 226, 179, .32);
+  border-radius: 4px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .5s ease, transform .5s ease;
+  font-size: clamp(10px, 1.05cqw, 15px);
+}
+#card.show { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
+#card h2 {
+  margin: 0 0 .5em;
+  font-size: 1.35em;
+  letter-spacing: .16em;
+  font-weight: 500;
+  color: #ffe7cd;
+}
+#card p { margin: 0 0 1em; color: rgba(242, 233, 218, .58); }
+/* 「看看」：卡片收成底部一条，把整块黑板让出来 */
+#card.min {
+  top: auto;
+  bottom: 4%;
+  transform: translateX(-50%);
+  padding: .5em .8em;
+  min-width: 0;
+}
+#card.min h2, #card.min p, #card.min #look { display: none; }
+#card .row { display: flex; gap: .6em; justify-content: center; }
+#card a {
+  display: inline-block;
+  text-decoration: none;
+  padding: 7px 14px;
+  background: rgba(150, 96, 64, .95);
+  border: 1px solid rgba(255, 226, 179, .7);
+  border-radius: 3px;
+  color: #fff6e2;
+  font-size: 1em;
+}
+
+/* ---------------------------------------------------------------- 文字输入 */
+
+#textin {
+  position: absolute;
+  display: none;
+  transform: translateY(-50%);
+  min-width: 9em;
+  padding: 3px 6px;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  color: #fff6e2;
+  background: rgba(18, 16, 22, .94);
+  border: 1px solid rgba(255, 226, 179, .6);
+  border-radius: 2px;
+  outline: none;
+}
+
+#loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #0b0a0d;
+  color: rgba(242, 233, 218, .45);
+  letter-spacing: .2em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+  font-size: 13px;
+}
+#loading.show { opacity: 1; }
