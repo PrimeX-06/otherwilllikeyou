@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>第三幕 · 藏不住的心事</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="stage" aria-label="第三幕剧情">
+    <canvas id="scene" width="512" height="288" aria-label="学校走廊与教室"></canvas>
+    <img id="cg" alt="" hidden>
+    <div id="emotion" data-kind="encounter" hidden>
+      <img id="blush" src="../../act4/after-broadcast/assets/kazuomi_blush_closeup.png" alt="和臣微微脸红">
+      <div class="emotion-copy"><b id="emotionTitle">怎么突然有点紧张……</b><p id="emotionLine">留意眼前的小事，等心跳缓下来。</p>
+        <canvas id="heartGame" width="640" height="300" aria-label="从胃部向后拉，瞄准对方，把话送出去"></canvas>
+        <p id="focusMessage" class="focus-message" aria-live="polite">从胃部向后拖，等心跳缓下来时松开。</p>
+        <small>鼠标拖拽并松开；也可用方向键调整，空格发射。说错了就再试一次。</small>
+      </div>
+    </div>
+    <div id="shade"></div>
+    <div id="chapter">第三幕 / 藏不住的心事</div>
+    <div id="dialog" hidden><b id="who"></b><p id="line"></p><small>E / Enter / 点击继续</small></div>
+    <div id="choice" hidden><p id="choiceQuestion"></p><div id="choiceItems"></div></div>
+    <div id="end" hidden><h1 id="endTitle"></h1><p id="endBody"></p><div class="actions">
+      <a id="next" href="../daily.html">进入校园日常</a>
+      <button id="replay" type="button">重看这一段</button>
+    </div></div>
+  </main>
+  <script src="emotion.js"></script>
+  <script src="story.js"></script>
+</body>
+</html>

@@ -9,8 +9,17 @@
 <body>
 <main id="stage">
   <canvas id="scene" width="512" height="288" aria-label="校园"></canvas>
+  <img id="storyCg" class="story-cg" src="" alt="" hidden>
 
   <div id="chapter">校园日常</div>
+
+  <!-- G01 换人条：三个站位，亮着的人在做自己的事，做完的打勾。
+       只在这一场做事阶段出现；Tab 也能轮换。 -->
+  <div id="erTags" class="er-tags" hidden>
+    <button type="button" data-who="girl" title="贴通知">朱里</button>
+    <button type="button" data-who="friend" title="数材料">由乃</button>
+    <button type="button" data-who="boy" title="搬箱子">我</button>
+  </div>
 
   <div id="obj" class="obj"><b>目标</b><span id="objSub"></span></div>
   <div id="hint" class="hint"></div>
@@ -19,18 +28,21 @@
   <button id="nbBtn" type="button" hidden>线索本 <b>0</b></button>
   <div id="msg" class="msg"></div>
 
-  <!-- 体育活动的小面板：只有一行进度 + 一行操作提示，不挡球路 -->
+  <!-- 体育活动的小面板：左边是「我」，右边是「她们」，比分牌只活在这一场里 -->
   <div id="bgHud" class="bg-hud">
-    <b id="bgCount">传接 0 / 5</b>
-    <span id="bgTip">球滚到脚边时按 空格 接住</span>
+    <span class="bg-side">我</span>
+    <img id="bgBoard" class="bg-board" src="../assets/minigame/scoreboard_0_0.png" alt="比分 0 比 0" width="96" height="48">
+    <span class="bg-side">她们</span>
+    <span id="bgTip">WASD 跑位，靠近持球的人按 E 开抢断圈</span>
   </div>
   <div id="bgCtl" hidden>
-    <div class="bg-pick">
-      <button id="bgToGirl" type="button">朱里</button>
-      <button id="bgToFriend" type="button">闺蜜</button>
-    </div>
-    <button id="bgAct" type="button">按住蓄力<br>接球</button>
+    <button id="bgAct" type="button">按住蓄力<br>射门</button>
   </div>
+
+  <!-- 四个小游戏共用的「主动发起 / 即时反应」层。
+       短反应不走对白框：不冻住操作、不抢 E，说完就散。 -->
+  <div id="react" class="react" hidden></div>
+  <button id="reactBtn" class="react-btn" type="button" hidden>F · 搭话</button>
 
   <div id="dialog" class="dlg">
     <b id="who"></b>
@@ -38,8 +50,8 @@
     <small>E / 空格 / 点击 继续</small>
   </div>
 
-  <!-- 章节目录：四个日常，按日期排，不硬凑成同一天 -->
-  <div id="hub" class="hub show">
+  <!-- 章节目录：只在 ?hub=1 时作调试 / 单场入口；正常进入是自动时间线 -->
+  <div id="hub" class="hub" hidden>
     <h1>第三幕 · 校园日常</h1>
     <p class="sub">那些没说出口的话</p>
     <ul id="hubList"></ul>
@@ -47,6 +59,7 @@
       <button id="hubStart" type="button">按顺序开始</button>
       <button id="hubReset" type="button">清掉存档</button>
     </div>
+    <a id="afterStoryHub" class="story-link" href="narrative/index.html?phase=after" hidden>继续 · 走廊里的那句话</a>
   </div>
 
   <!-- 猜词面板。整块盖在画面上，三个人做头像条，中央是题面 -->
@@ -55,13 +68,30 @@
       <div class="wg-head">
         <div class="chip" data-who="girl"><i class="face f-girl"></i><b>朱里</b></div>
         <div class="chip" data-who="me"><i class="face f-boy"></i><b>和臣</b></div>
-        <div class="chip" data-who="friend"><i class="face f-friend"></i><b>闺蜜</b></div>
+        <div class="chip" data-who="friend"><i class="face f-friend"></i><b>由乃</b></div>
       </div>
       <div class="wg-round" id="wgRound"></div>
-      <div class="wg-host" id="wgHost"></div>
-      <ul class="wg-clues" id="wgClues"></ul>
-      <div class="wg-say" id="wgSay"></div>
+      <!-- 猜人物：左边一张剪影（人形轮廓 + 标志性道具），右边是主持人的话和线索 -->
+      <div class="wg-body">
+        <div class="wg-figure" id="wgFigure">
+          <span class="wg-cat" id="wgCat"></span>
+          <img id="wgSil" src="" alt="" width="96" height="96">
+        </div>
+        <div class="wg-main">
+          <div class="wg-host" id="wgHost"></div>
+          <ul class="wg-clues" id="wgClues"></ul>
+          <div class="wg-say" id="wgSay"></div>
+        </div>
+      </div>
       <div class="wg-opts" id="wgOpts"></div>
+      <!-- 三题之后的插曲：换玩家出题。先挑词，再挑两句最像的线索；她俩边听边猜。
+           不给分、不计时，等不到人点就自己往下走。 -->
+      <div class="wg-swap" id="wgSwap" hidden>
+        <p id="wgSwapLead">由乃：「换你出一个，我们来猜。」</p>
+        <div class="wg-opts" id="wgSwapOpts"></div>
+        <div class="wg-opts wg-swap-clues" id="wgSwapClues" hidden></div>
+        <div class="wg-say" id="wgSwapSay"></div>
+      </div>
       <div class="wg-tools">
         <button id="wgHint" type="button">再给点提示</button>
         <input id="wgInput" type="text" maxlength="8" placeholder="或者直接写出来" autocomplete="off">
@@ -82,10 +112,54 @@
       <ul id="nbList"></ul>
       <p class="nb-empty" id="nbEmpty">还没看到什么。</p>
       <div class="row">
-        <button id="nbHint" type="button">问问闺蜜</button>
+        <button id="nbMap" type="button">在地图上想想</button>
+        <button id="nbHint" type="button">问问由乃</button>
         <button id="nbClose" type="button">合上</button>
       </div>
     </div>
+  </div>
+
+  <!-- G02 二楼平面图：先挑一句能证明她来过这儿的线索，再按先后把地点钉出来。
+       七个地点按钮由 search.js 按 SPOTS 生成，这里只留一张底图。 -->
+  <div id="map" class="map" hidden>
+    <div class="map-card">
+      <h3>二楼平面图</h3>
+      <p class="map-lead">她上午可能去过哪儿？点一个地点，再从线索里挑出能证明她去过那儿的一句。钉的先后就是线上的先后；地点角上的数字，是那儿挂着几条线索。</p>
+      <div class="map-wrap" id="mapWrap">
+        <img class="map-bg" src="../assets/minigame/map_floor2.png" alt="二楼平面图" width="256" height="160">
+        <svg class="map-line" viewBox="0 0 256 160" preserveAspectRatio="none" aria-hidden="true">
+          <polyline id="mapRoute" points=""></polyline>
+        </svg>
+      </div>
+      <!-- 点开一个地点之后，这里摊出还没用过的线索。挑对才钉得上。 -->
+      <div class="map-pick" id="mapPick" hidden>
+        <p class="map-pick-lead" id="mapPickLead"></p>
+        <div class="map-pick-list" id="mapPickList"></div>
+        <button id="mapPickClose" type="button" class="map-pick-close">先不钉</button>
+      </div>
+      <p class="map-said" id="mapSaid">她上午可能去过哪儿？</p>
+      <div class="row">
+        <span class="map-count" id="mapCount">钉了 0 个</span>
+        <button id="mapCheck" type="button">看看这条线</button>
+        <button id="mapClose" type="button">合上</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- G02 找到卡之后：怎么还给她。不选也会自己往下走，不拦关。 -->
+  <div id="giveBack" class="give-back" hidden>
+    <p>怎么把卡还给她？</p>
+    <div class="row">
+      <button type="button" data-i="0">直接递过去</button>
+      <button type="button" data-i="1">放她桌上</button>
+      <button type="button" data-i="2">先喊她一声</button>
+    </div>
+  </div>
+
+  <!-- 单人日常里的一句选择。和「怎么还给她」共用样式。 -->
+  <div id="soloChoice" class="give-back" hidden>
+    <p id="soloChoiceLead"></p>
+    <div class="row" id="soloChoiceBtns"></div>
   </div>
 
   <div id="card" class="card" hidden>
@@ -94,10 +168,24 @@
     <div class="row">
       <button id="cardAgain" type="button">再玩一次</button>
       <button id="cardBack" type="button">回到目录</button>
+      <a id="afterStoryCard" class="story-link" href="narrative/index.html?phase=after" hidden>继续 · 走廊里的那句话</a>
     </div>
   </div>
 
   <div id="fade"></div>
+
+  <!-- 日期卡：自动时间线每次跨日时压黑盖一张。
+       图标复用 assets/minigame/icon_day_*.png，底图复用走廊 / 栏杆 / 楼前空地。 -->
+  <div id="dayCard" class="day-card" hidden aria-hidden="true">
+    <img id="dayBg" class="day-bg" src="" alt="">
+    <div class="day-inner">
+      <img id="dayIcon" class="day-icon" src="" alt="" width="48" height="48">
+      <div class="day-copy">
+        <b id="dayName"></b>
+        <span id="daySub"></span>
+      </div>
+    </div>
+  </div>
 </main>
 
 <script src="core.js"></script>
@@ -105,6 +193,7 @@
 <script src="explore.js"></script>
 <script src="errand.js"></script>
 <script src="search.js"></script>
+<script src="solo.js"></script>
 <script src="wordgame.js"></script>
 <script src="ball.js"></script>
 <script src="shell.js"></script>

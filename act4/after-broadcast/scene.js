@@ -3,7 +3,9 @@
   const W = 512, H = 288;
   const canvas = document.getElementById("scene"), ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
-  const cg = document.getElementById("cg"), fade = document.getElementById("fade");
+  const cg = document.getElementById("cg"), memoryMontage = document.getElementById("memoryMontage"), fade = document.getElementById("fade");
+  const memoryShards = [...memoryMontage.querySelectorAll(".memory-shard")], memoryPortrait = document.getElementById("memoryPortrait");
+  const blushCut = document.getElementById("blushCut"), blushBoy = document.getElementById("blushBoy"), blushGirl = document.getElementById("blushGirl");
   const dialog = document.getElementById("dialog"), who = document.getElementById("who"), line = document.getElementById("line");
   const caption = document.getElementById("caption"), captionWho = document.getElementById("captionWho"), captionLine = document.getElementById("captionLine");
   const controls = document.getElementById("controls"), narration = document.getElementById("narration"), hint = document.getElementById("hint");
@@ -14,11 +16,23 @@
     railing: "assets/railing.png",
     railingNotice: "assets/railing_notice.png",
     stair: "assets/stairwell.png",
-    snack: "assets/cg_snack_handoff.png",
+    snack: "assets/cg_snack_handoff_v2.png",
     final: "../../assets/scenes/cg_corridor_lean_back.png",
+    doorwayMemory: "../../assets/scenes/cg_doorway_wave_v2.png",
+    boardMemory: "../../assets/scenes/school_corridor_board_lowered_512.png",
+    broadcastMemory: "../../act2/broadcast-bridge/assets/cg_turn_to_zhuli_single_desk.png",
     boy: "../../assets/characters/boy/v2/boy_sheet_v2.png",
     girl: "../../assets/characters/girl/v2/girl_sheet_v2.png"
   };
+  const MEMORIES = [
+    { text: "靠在护栏上，风吹过来，我的脑子里却忽然闪过好多小事。" },
+    { src: SRC.doorwayMemory, text: "教室门口，朱里朝我挥手。那时我还没想到，自己会越来越期待听见她叫我的名字。" },
+    { src: SRC.boardMemory, text: "画黑板报的时候，她把粉笔递给我，自己留下来补那些细细的边。" },
+    { src: SRC.broadcastMemory, text: "广播室里，红灯亮起。她坐在旁边，等我把那句话说完。" },
+    { src: SRC.snack, text: "还有刚才那张被风吹走的稿纸，和她留给我的最后一块饼干。" },
+    { text: "这些事都很小。可不知从什么时候起，每次想起那段日子，我总会先想起她。" },
+    { text: "后来我才明白，我是在这样一点一点地，喜欢上了朱里。" }
+  ];
   const image = {};
   const boy = { x: 380, y: 232 }, girl = { x: 415, y: 232 };
   const held = new Set();
@@ -65,6 +79,11 @@
       const done = afterDialog; afterDialog = null; done?.();
       return;
     }
+    if (scene === "memory") showMemoryMontage(dialogIndex);
+    if (scene === "blush") {
+      blushBoy.classList.toggle("is-speaking", item[0] === "和臣");
+      blushGirl.classList.toggle("is-speaking", item[0] === "朱里");
+    }
     who.textContent = item[0]; line.textContent = "";
     // Same rhythm as the first act: one character at a time, E first completes
     // the sentence and only then moves to the next one.
@@ -75,6 +94,11 @@
       line.textContent = text.slice(0, shown);
       if (shown >= text.length) clearInterval(dialogTimer);
     }, 29);
+  }
+  function showMemoryMontage(index) {
+    memoryMontage.hidden = false;
+    memoryShards.forEach((shard, i) => shard.classList.toggle("is-shown", index > i));
+    memoryPortrait.classList.toggle("is-shown", index >= 5);
   }
   function advance() {
     if (dialog.hidden) return;
@@ -120,6 +144,10 @@
     scene = next; elapsed = 0;
     clearInterval(dialogTimer); clearInterval(captionTimer);
     dialog.classList.remove("subtitle-style");
+    memoryMontage.hidden = true;
+    blushCut.hidden = true;
+    memoryShards.forEach((shard) => shard.classList.remove("is-shown"));
+    memoryPortrait.classList.remove("is-shown");
     dialog.hidden = true; ending.hidden = true; caption.hidden = true; captionQueue = [];
     controls.hidden = !["doorWalk", "railingWalk", "railPause", "paperWalk", "paperChase", "lullWalk", "snack", "afterSnack", "stairWalk", "stairPause"].includes(next);
     inspectButton.hidden = true;
@@ -150,6 +178,7 @@
       say([["和臣", "拿到了。边角有点折。"], ["朱里", "给我，我把它压平。"], ["和臣", "风还在吹，你按着这边。"], ["朱里", "这样呢？"], ["和臣", "好了。夹进你的本子里吧。"], ["朱里", "嗯。这回不会再跑了。"]], () => enter("lullWalk"));
     }
     if (next === "paperPick") { autoWalk = false; }
+    if (next === "snackTurn") { autoWalk = false; }
     if (next === "snack") {
       snackDistance = 0; autoWalk = false; cg.src = SRC.snack; cg.alt = "朱里在白色护栏旁递给和臣一块饼干"; cg.hidden = false;
       say([["朱里", "你刚才在广播室，肚子叫了一声。"], ["和臣", "……你连这个都听见了？"], ["朱里", "离得那么近，当然听见了。给，刚好还有一块。"], ["和臣", "那我不客气了。"], ["朱里", "嗯，留着走到楼梯口再吃也行。"]], () => { controls.hidden = false; updateHint(); });
@@ -162,7 +191,23 @@
       cg.src = SRC.final; cg.alt = "和臣与朱里并肩靠在学校走廊的白色护栏前"; cg.hidden = false;
       finalLines = false;
     }
-    if (next === "ending") { cg.src = SRC.final; cg.hidden = false; ending.hidden = false; }
+    if (next === "memory") {
+      cg.src = SRC.final; cg.alt = "和臣与朱里并肩靠在学校走廊的白色护栏前"; cg.hidden = false;
+      dialog.classList.add("subtitle-style");
+      say(MEMORIES.map((beat) => ["和臣·心声", beat.text]), () => enter("blush"));
+    }
+    if (next === "blush") {
+      cg.src = SRC.final; cg.hidden = false; blushCut.hidden = false;
+      dialog.classList.add("subtitle-style");
+      say([["朱里", "和臣？怎么了？"], ["和臣", "没、没什么。"], ["朱里", "可是你脸都红了。"], ["和臣", "我、我先下去了。明天见！"]], () => enter("hurryAway"));
+    }
+    if (next === "hurryAway") { boy.x = 305; girl.x = 365; autoWalk = false; }
+    if (next === "girlAlone") {
+      boy.x = -40; girl.x = 365;
+      dialog.classList.add("subtitle-style");
+      say([["朱里", "……明天见，和臣。"]], () => enter("ending"));
+    }
+    if (next === "ending") { boy.x = -40; girl.x = 365; ending.hidden = false; }
     updateHint();
   }
   function updateHint() {
@@ -197,7 +242,7 @@
   }
   function update(dt) {
     elapsed += dt;
-    fade.style.opacity = ["railingWalk", "paperWalk", "lullWalk", "afterSnack", "stairWalk"].includes(scene) ? String(Math.max(0, 1 - elapsed / .55) * .65) : "0";
+    fade.style.opacity = ["railingWalk", "paperWalk", "lullWalk", "afterSnack", "stairWalk", "hurryAway"].includes(scene) ? String(Math.max(0, 1 - elapsed / .55) * .65) : "0";
     if (captionQueue.length) {
       captionTime += dt;
       if (captionTime > 4.1) advanceCaption();
@@ -217,7 +262,11 @@
     if (scene === "lullWalk") {
       ballClock += dt;
       if (ballClock > 3.1) { tone(96, .12, .003); ballClock = 0; }
-      if (boy.x <= 225 && elapsed >= 5) enter("snack");
+      if (boy.x <= 225 && elapsed >= 5) enter("snackTurn");
+    }
+    if (scene === "snackTurn") {
+      if (elapsed < .7) boy.x -= 42 * dt;
+      if (elapsed >= 1.35) enter("snack");
     }
     if (scene === "snack" && dialog.hidden && moving()) {
       snackDistance += WALK_SPEED * dt;
@@ -230,10 +279,11 @@
     if (scene === "stairWalk" && boy.x <= 225) { autoWalk = false; enter("stairPause"); }
     if (scene === "final" && elapsed >= 2.2 && !finalLines) {
       finalLines = true;
-      // Over the corridor CG these are narration, not a conversation at a
-      // table: show them the way Act 1 shows its cutscene subtitles.
-      dialog.classList.add("subtitle-style");
-      say([["和臣", "那天，我们只是播完音，沿着走廊走了一段。"], ["和臣", "可我一直记得，护栏上的光。"]], () => enter("ending"));
+      enter("memory");
+    }
+    if (scene === "hurryAway") {
+      boy.x -= 112 * dt;
+      if (boy.x <= 30) enter("girlAlone");
     }
   }
   function sprite(im, frame, x, feet, scale = 1.45) {
@@ -243,25 +293,29 @@
   function render() {
     ctx.clearRect(0, 0, W, H);
     const atDoor = ["exit", "firstWords", "doorWalk"].includes(scene);
-    const atStair = ["stairWalk", "stairPause", "stairWords"].includes(scene);
+    const atStair = ["stairWalk", "stairPause", "stairWords", "hurryAway", "girlAlone", "ending"].includes(scene);
     const atNotice = ["paperWalk", "paperAlert", "paperChase", "paperPick", "paperFound", "afterSnack"].includes(scene);
     const bg = atDoor ? (scene === "exit" && elapsed < 1.25 ? image.doorOpen : image.door)
       : atStair ? image.stair : atNotice ? image.railingNotice : image.railing;
     ctx.drawImage(bg, 0, 0, W, H);
-    if (["snack", "final", "ending"].includes(scene)) return;
-    const walking = moving() && dialog.hidden && !captionQueue.length && ["doorWalk", "railingWalk", "paperWalk", "paperChase", "lullWalk", "afterSnack", "stairWalk"].includes(scene);
+    if (["snack", "final", "memory", "blush"].includes(scene)) return;
+    const walking = scene === "hurryAway" || moving() && dialog.hidden && !captionQueue.length && ["doorWalk", "railingWalk", "paperWalk", "paperChase", "lullWalk", "afterSnack", "stairWalk"].includes(scene);
     let bx = boy.x, gx = girl.x;
     if (scene === "exit") { const k = Math.min(1, elapsed / 1.3); bx = 380 - 60 * k; gx = 415 - 60 * k; }
-    const step = Math.floor(elapsed * 7) % 4;
+    const step = Math.floor(elapsed * (scene === "hurryAway" ? 12 : 7)) % 4;
     const speaker = !dialog.hidden ? dialogLines[dialogIndex]?.[0] : null;
-    const boyFrame = scene === "paperPick" ? 25
+    const boyFrame = scene === "snackTurn" ? (elapsed < .35 ? 9 + step : elapsed < .7 ? 0 : 3)
+      : scene === "hurryAway" ? 9 + step
+      : scene === "paperPick" ? 25
       : scene === "stairWords" ? 4
         : speaker === "和臣" ? 24
           : walking || scene === "exit" && elapsed < 1.3 ? 9 + step : 2;
-    const girlFrame = ["stairPause", "stairWords", "railPause", "railTalk"].includes(scene) ? 4
+    const girlFrame = scene === "snackTurn" ? 2
+      : ["hurryAway", "girlAlone", "ending"].includes(scene) ? 2
+      : ["stairPause", "stairWords", "railPause", "railTalk"].includes(scene) ? 4
       : speaker === "朱里" ? 26
         : walking || scene === "exit" && elapsed < 1.3 ? 9 + step : 2;
-    sprite(image.boy, boyFrame, bx, 232);
+    if (!["girlAlone", "ending"].includes(scene)) sprite(image.boy, boyFrame, bx, 232);
     sprite(image.girl, girlFrame, gx, 232);
     if (!paperCaught && (["paperWalk", "paperAlert", "paperChase"].includes(scene) || scene === "paperPick" && elapsed < .38)) {
       const falling = scene === "paperWalk";
@@ -310,5 +364,5 @@
     .then(() => enter("exit"))
     .catch((err) => { ending.hidden = false; ending.querySelector("h1").textContent = "场景资源加载失败"; ending.querySelector("p").textContent = err.message; });
   requestAnimationFrame(loop);
-  window.__afterBroadcast = { get scene() { return scene; }, get boyX() { return boy.x; }, get girlX() { return girl.x; }, enter };
+  window.__afterBroadcast = { get scene() { return scene; }, get dialogIndex() { return dialogIndex; }, get boyX() { return boy.x; }, get girlX() { return girl.x; }, enter };
 })();

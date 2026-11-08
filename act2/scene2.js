@@ -284,7 +284,7 @@
       const p = friendCameo.phase;
       const frame = p === "enter" ? 12 + Math.floor(sc.t * 8) % 4
         : p === "leave" ? 16 + Math.floor(sc.t * 8) % 4
-          : dlg?.who === "闺蜜" ? 28 : 0;
+          : dlg?.who === "由乃" ? 28 : 0;
       ctx.drawImage(img.friend, frame * FW, 0, FW, FH,
         Math.round(friendCameo.x - FW / 2), 242 - FH, FW, FH);
     }
@@ -305,9 +305,9 @@
         friendCameo.phase = "talk";
         lines([
           ["旁白", "还没走到黑板前，走廊那头就有人叫了朱里一声。"],
-          ["闺蜜", "朱里，原来你在这儿。"],
+          ["由乃", "朱里，原来你在这儿。"],
           ["朱里", "嗯，刚准备画。"],
-          ["闺蜜", "难怪没在教室看见你。我先回去啦。"],
+          ["由乃", "难怪没在教室看见你。我先回去啦。"],
           ["朱里", "好，回头见。"],
           ["旁白", "她朝朱里挥挥手，经过我时也笑了一下。她们很熟，我那时还不太了解她。"]
         ], () => { friendCameo.phase = "leave"; friendCameo.t = 0; });

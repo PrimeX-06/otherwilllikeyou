@@ -4,12 +4,28 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#29232b;col
 #scene,#cg{position:absolute;left:50%;top:50%;width:max(100vw,177.7778dvh);height:max(100dvh,56.25vw);transform:translate(-50%,-50%)}
 #scene{image-rendering:pixelated}
 #cg{object-fit:cover;image-rendering:pixelated}
+.memory-montage{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 37%,#211824ac 0%,#21182455 38%,#21182422 72%,transparent 100%)}
+#chapter,#caption,#dialog,#narration,#controls,#ending{z-index:3}
+.memory-montage::before{content:"";position:absolute;left:50%;top:0;width:min(48vw,620px);height:100%;transform:translateX(-50%);background:radial-gradient(ellipse at 50% 52%,#211b2b 0%,#211b2bf2 46%,#211b2ba0 64%,transparent 80%)}
+.memory-shard{position:absolute;width:min(25vw,320px);height:min(24vh,180px);object-fit:cover;image-rendering:pixelated;opacity:0;filter:saturate(.87) sepia(.12) drop-shadow(0 8px 12px #1b142ab0);mask-image:radial-gradient(ellipse 79% 85% at center,#000 53%,transparent 100%);transform:translate(var(--fly-x),var(--fly-y)) rotate(var(--turn)) scale(.55);transition:transform .78s cubic-bezier(.18,.82,.22,1),opacity .7s ease;will-change:transform,opacity}
+.memory-shard.is-shown{opacity:.94;transform:translate(0,0) rotate(var(--turn)) scale(1)}
+.shard-door{left:5%;top:8%;object-position:20% 46%;--fly-x:-48vw;--fly-y:-24vh;--turn:-8deg}
+.shard-board{right:5%;top:8%;--fly-x:48vw;--fly-y:-24vh;--turn:7deg}
+.shard-broadcast{left:8%;top:38%;object-position:71% 47%;--fly-x:-47vw;--fly-y:29vh;--turn:6deg}
+.shard-snack{right:8%;top:38%;object-position:68% 50%;--fly-x:47vw;--fly-y:29vh;--turn:-7deg}
+#memoryPortrait{position:absolute;z-index:2;left:50%;top:3%;width:min(32vw,410px);height:min(67vh,500px);object-fit:contain;image-rendering:pixelated;opacity:0;filter:drop-shadow(0 4px 4px #fff0d066) drop-shadow(0 20px 25px #251723cb);mask-image:linear-gradient(to bottom,#000 0%,#000 78%,transparent 100%);transform:translate(-50%,12%) scale(.68);transition:opacity .9s ease,transform 1s cubic-bezier(.17,.83,.24,1)}
+#memoryPortrait.is-shown{opacity:1;transform:translate(-50%,0) scale(1)}
+.blush-cut{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,#251b2baf,#251b2b44 48%,#251b2baf)}
+.blush-cut img{position:absolute;top:7%;height:min(66vh,510px);width:min(34vw,440px);object-fit:contain;image-rendering:pixelated;mask-image:linear-gradient(to bottom,#000 0%,#000 78%,transparent 100%);opacity:.78;filter:drop-shadow(0 14px 18px #1c1428b8);transition:opacity .35s,transform .35s}
+#blushBoy{left:15%;transform:translateY(14px) scale(.94)}
+#blushGirl{right:13%;transform:translateY(14px) scale(.88)}
+.blush-cut img.is-speaking{opacity:1;transform:translateY(0) scale(1)}
 [hidden]{display:none!important}
 #fade{position:absolute;inset:0;background:#211e28;opacity:0;pointer-events:none}
 #chapter{position:absolute;left:22px;top:18px;font-size:15px;letter-spacing:.12em;text-shadow:0 2px 5px #0009}
 #dialog{position:absolute;left:6%;right:6%;bottom:6%;min-height:15%;padding:.8em 1.2em .95em;background:rgba(15,12,16,.86);border:1px solid rgba(242,233,218,.22);box-shadow:0 8px 28px rgba(0,0,0,.35);cursor:pointer;font-size:clamp(10px,1.25vw,26px);letter-spacing:.04em;animation:story-in .22s ease both}
 #dialog b{display:block;width:auto;min-width:0;margin:0 0 6px;padding:0;color:#c96b5a;background:none;border:0;font-size:.82em;font-weight:400;letter-spacing:.18em;line-height:1.3}
-#dialog p{display:block;margin:0;color:#f2e9da;font-size:clamp(13px,1.75vw,34px);line-height:1.75;letter-spacing:.04em;text-shadow:none;white-space:pre-wrap;min-height:1.75em}
+#dialog p{display:block;margin:0;color:#f2e9da;font-size:clamp(13px,2.25vw,34px);line-height:1.75;letter-spacing:.04em;text-shadow:none;white-space:pre-wrap;min-height:1.75em}
 #dialog small{position:absolute;right:.9em;bottom:.55em;color:rgba(242,233,218,.55);font-size:.82em;letter-spacing:.04em}
 /* 结尾那两句是 CG 上的旁白，不是桌边的对白：摘掉盒子，只留字。 */
 #dialog.subtitle-style{left:8%;right:8%;bottom:11%;min-height:0;padding:0;background:none;border:0;box-shadow:none;text-align:center;font-size:clamp(14px,1.9vw,38px);line-height:1.6;letter-spacing:.04em;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 20px rgba(0,0,0,.6)}
@@ -19,12 +35,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#29232b;col
 @keyframes story-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 /* 走廊里的环境字幕：像第一幕结尾的字幕一样，只留字和说话人，
    不加盒子。它每句自己停一会儿，所以不给 E 提示。 */
-#caption{position:absolute;left:8%;right:8%;bottom:9%;text-align:center;color:#fff6e8;font-size:clamp(14px,1.9vw,38px);line-height:1.6;letter-spacing:.04em;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 20px rgba(0,0,0,.6);cursor:pointer;animation:story-in .25s ease both}
+#caption{position:absolute;left:8%;right:8%;bottom:9%;text-align:center;color:#fff6e8;font-size:clamp(14px,2.3vw,38px);line-height:1.6;letter-spacing:.04em;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 20px rgba(0,0,0,.6);cursor:pointer;animation:story-in .25s ease both}
 #caption b{display:block;width:auto;min-width:0;margin:0 0 4px;padding:0;color:#ffc98f;background:none;border:0;font-size:.72em;font-weight:400;letter-spacing:.22em;line-height:1.3}
 #caption span{display:inline;color:inherit;font-size:1em;line-height:inherit;letter-spacing:inherit;text-shadow:inherit}
 #caption small{display:none}
 /* 走路的旁白：同一套字幕样式，控制提示缩成下面一行小字。 */
-#narration{position:absolute;left:8%;right:8%;bottom:9%;text-align:center;color:#fff6e8;font-size:clamp(14px,1.9vw,38px);line-height:1.6;letter-spacing:.04em;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 20px rgba(0,0,0,.6);animation:story-in .25s ease both}
+#narration{position:absolute;left:8%;right:8%;bottom:9%;text-align:center;color:#fff6e8;font-size:clamp(14px,2.3vw,38px);line-height:1.6;letter-spacing:.04em;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 20px rgba(0,0,0,.6);animation:story-in .25s ease both}
 #narration b{display:block;width:auto;min-width:0;margin:0 0 4px;padding:0;color:#ffc98f;background:none;border:0;font-size:.72em;font-weight:400;letter-spacing:.22em;line-height:1.3}
 #narration p{display:block;margin:0;color:inherit;font-size:1em;line-height:inherit;letter-spacing:inherit;text-shadow:inherit}
 #narration small{display:block;margin-top:.55em;color:rgba(242,233,218,.55);font-size:.52em;letter-spacing:.1em;text-shadow:0 1px 4px rgba(0,0,0,.9)}

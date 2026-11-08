@@ -32,7 +32,7 @@ const OUT = path.resolve(__dirname, 'out');
   await page.waitForTimeout(700);
   await page.screenshot({ path: path.join(OUT, '00-scene.png') });
 
-  // ---- 开场对白与闺蜜短暂经过，一路 E 推过去
+  // ---- 开场对白与由乃短暂经过，一路 E 推过去
   let sawFriend = false;
   for (let i = 0; i < 100; i++) {
     const s = await page.evaluate(() => window.__board.state().state);
@@ -46,7 +46,7 @@ const OUT = path.resolve(__dirname, 'out');
     await page.keyboard.press('KeyE');
     await page.waitForTimeout(130);
   }
-  if (!sawFriend) fail('第二幕没有出现闺蜜铺垫');
+  if (!sawFriend) fail('第二幕没有出现由乃铺垫');
   // 推镜头的中途抓一张：这一段是「从走廊走到黑板前」
   const midPush = await page.evaluate(() => window.__board.state().state);
   if (midPush === 'push') {

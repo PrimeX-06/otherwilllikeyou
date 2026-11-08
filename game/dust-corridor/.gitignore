@@ -1,6 +1,5 @@
 node_modules
-# The published story is played straight from file://, so the built bundle is
-# committed instead of being ignored.
+dist
 test-results
 playwright-report
 

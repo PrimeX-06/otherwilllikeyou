@@ -1,0 +1,373 @@
+{
+  "assets": {
+    "ball_sheet.png": {
+      "width": 64,
+      "height": 16
+    },
+    "card_poster_bg.png": {
+      "width": 128,
+      "height": 96
+    },
+    "card_result_bg.png": {
+      "width": 384,
+      "height": 192
+    },
+    "cutscene_monday_corridor.png": {
+      "width": 512,
+      "height": 288
+    },
+    "cutscene_next_monday_field.png": {
+      "width": 512,
+      "height": 288
+    },
+    "cutscene_wednesday_stairwell.png": {
+      "width": 512,
+      "height": 288
+    },
+    "field_overlay.png": {
+      "width": 512,
+      "height": 288
+    },
+    "fx_goal.png": {
+      "width": 384,
+      "height": 64
+    },
+    "goal_frame.png": {
+      "width": 160,
+      "height": 112
+    },
+    "hub_thumb_ball.png": {
+      "width": 96,
+      "height": 64
+    },
+    "hub_thumb_errand.png": {
+      "width": 96,
+      "height": 64
+    },
+    "hub_thumb_search.png": {
+      "width": 96,
+      "height": 64
+    },
+    "hub_thumb_word.png": {
+      "width": 96,
+      "height": 64
+    },
+    "icon_cat_anime.png": {
+      "width": 32,
+      "height": 32
+    },
+    "icon_cat_game.png": {
+      "width": 32,
+      "height": 32
+    },
+    "icon_cat_movie.png": {
+      "width": 32,
+      "height": 32
+    },
+    "icon_day_fri.png": {
+      "width": 24,
+      "height": 24
+    },
+    "icon_day_mon.png": {
+      "width": 24,
+      "height": 24
+    },
+    "icon_day_nextmon.png": {
+      "width": 24,
+      "height": 24
+    },
+    "icon_day_wed.png": {
+      "width": 24,
+      "height": 24
+    },
+    "inference_board_bg.png": {
+      "width": 512,
+      "height": 288
+    },
+    "map_floor2.png": {
+      "width": 256,
+      "height": 160
+    },
+    "prop_box.png": {
+      "width": 48,
+      "height": 48
+    },
+    "prop_box_closed.png": {
+      "width": 48,
+      "height": 48
+    },
+    "prop_box_open.png": {
+      "width": 48,
+      "height": 48
+    },
+    "prop_card_back.png": {
+      "width": 96,
+      "height": 64
+    },
+    "prop_card_front.png": {
+      "width": 96,
+      "height": 64
+    },
+    "prop_cctv.png": {
+      "width": 32,
+      "height": 32
+    },
+    "prop_cup.png": {
+      "width": 24,
+      "height": 24
+    },
+    "prop_dust_mark.png": {
+      "width": 64,
+      "height": 64
+    },
+    "prop_goal_flag.png": {
+      "width": 32,
+      "height": 48
+    },
+    "prop_lost_found.png": {
+      "width": 64,
+      "height": 64
+    },
+    "prop_notice_stack.png": {
+      "width": 32,
+      "height": 32
+    },
+    "prop_tape.png": {
+      "width": 16,
+      "height": 16
+    },
+    "prop_timetable.png": {
+      "width": 64,
+      "height": 80
+    },
+    "prop_water_reader.png": {
+      "width": 48,
+      "height": 64
+    },
+    "prop_water_reader_green.png": {
+      "width": 48,
+      "height": 64
+    },
+    "prop_water_reader_red.png": {
+      "width": 48,
+      "height": 64
+    },
+    "scoreboard.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_0_0.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_0_1.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_0_2.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_0_3.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_1_0.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_1_1.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_1_2.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_1_3.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_2_0.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_2_1.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_2_2.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_2_3.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_3_0.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_3_1.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_3_2.png": {
+      "width": 96,
+      "height": 48
+    },
+    "scoreboard_3_3.png": {
+      "width": 96,
+      "height": 48
+    },
+    "silhouette_anime_01.png": {
+      "width": 96,
+      "height": 96
+    },
+    "silhouette_anime_02.png": {
+      "width": 96,
+      "height": 96
+    },
+    "silhouette_anime_03.png": {
+      "width": 96,
+      "height": 96
+    },
+    "silhouette_game_01.png": {
+      "width": 96,
+      "height": 96
+    },
+    "silhouette_game_02.png": {
+      "width": 96,
+      "height": 96
+    },
+    "silhouette_game_03.png": {
+      "width": 96,
+      "height": 96
+    },
+    "silhouette_movie_01.png": {
+      "width": 96,
+      "height": 96
+    },
+    "silhouette_movie_02.png": {
+      "width": 96,
+      "height": 96
+    },
+    "silhouette_movie_03.png": {
+      "width": 96,
+      "height": 96
+    },
+    "title_ball.png": {
+      "width": 384,
+      "height": 64
+    },
+    "title_errand.png": {
+      "width": 384,
+      "height": 64
+    },
+    "title_search.png": {
+      "width": 384,
+      "height": 64
+    },
+    "title_word.png": {
+      "width": 384,
+      "height": 64
+    },
+    "ui_camera_edge.png": {
+      "width": 16,
+      "height": 288
+    },
+    "ui_clue_frame.png": {
+      "width": 64,
+      "height": 64
+    },
+    "ui_clue_frame_guessed.png": {
+      "width": 64,
+      "height": 64
+    },
+    "ui_clue_frame_remembered.png": {
+      "width": 64,
+      "height": 64
+    },
+    "ui_clue_frame_seen.png": {
+      "width": 64,
+      "height": 64
+    },
+    "ui_guess_slot.png": {
+      "width": 96,
+      "height": 96
+    },
+    "ui_guess_slot_correct.png": {
+      "width": 96,
+      "height": 96
+    },
+    "ui_guess_slot_excluded.png": {
+      "width": 96,
+      "height": 96
+    },
+    "ui_guess_slot_selected.png": {
+      "width": 96,
+      "height": 96
+    },
+    "ui_hint_bulb.png": {
+      "width": 24,
+      "height": 24
+    },
+    "ui_magnifier.png": {
+      "width": 16,
+      "height": 16
+    },
+    "ui_pin.png": {
+      "width": 16,
+      "height": 16
+    },
+    "ui_pin_blue.png": {
+      "width": 16,
+      "height": 16
+    },
+    "ui_pin_green.png": {
+      "width": 16,
+      "height": 16
+    },
+    "ui_pin_red.png": {
+      "width": 16,
+      "height": 16
+    },
+    "ui_progress_ring.png": {
+      "width": 32,
+      "height": 32
+    },
+    "ui_stamina.png": {
+      "width": 64,
+      "height": 8
+    },
+    "ui_task_dot.png": {
+      "width": 12,
+      "height": 12
+    },
+    "ui_task_dot_active.png": {
+      "width": 12,
+      "height": 12
+    },
+    "ui_task_dot_done.png": {
+      "width": 12,
+      "height": 12
+    },
+    "ui_task_dot_idle.png": {
+      "width": 12,
+      "height": 12
+    },
+    "yuno_feint_closeup.png": {
+      "width": 160,
+      "height": 120
+    },
+    "prop_notebook.png": {
+      "width": 24,
+      "height": 32
+    }
+  },
+  "characterManifests": {
+    "boy": "../characters/boy/v2/manifest_act5.json",
+    "girl": "../characters/girl/v2/manifest_act5.json",
+    "friend": "../characters/friend/v2/manifest_act5.json"
+  }
+}

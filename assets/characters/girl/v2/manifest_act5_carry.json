@@ -1,0 +1,105 @@
+{
+  "character": "girl",
+  "frameWidth": 48,
+  "frameHeight": 72,
+  "sheet": "girl_sheet_act5_carry.png",
+  "frames": 54,
+  "animations": {
+    "idle_down": [
+      0,
+      1
+    ],
+    "idle_left": [
+      2
+    ],
+    "idle_right": [
+      3
+    ],
+    "idle_up": [
+      4
+    ],
+    "walk_down": [
+      5,
+      6,
+      7,
+      8
+    ],
+    "walk_left": [
+      9,
+      10,
+      11,
+      12
+    ],
+    "walk_right": [
+      13,
+      14,
+      15,
+      16
+    ],
+    "walk_up": [
+      17,
+      18,
+      19,
+      20
+    ],
+    "wave": [
+      25
+    ],
+    "talk": [
+      26
+    ],
+    "pickup": [
+      27
+    ],
+    "lean_left": [
+      28
+    ],
+    "sit_left": [
+      29
+    ],
+    "offer": [
+      30
+    ],
+    "shy": [
+      31
+    ],
+    "lean_back": [
+      32
+    ],
+    "dribble_slow": [
+      33,
+      34,
+      35,
+      36
+    ],
+    "miss_kick": [
+      37,
+      38,
+      39
+    ],
+    "chase": [
+      40,
+      41,
+      42,
+      43
+    ],
+    "get_passed": [
+      44,
+      45
+    ],
+    "poster": [
+      46,
+      47,
+      48,
+      49
+    ],
+    "carry_front": [
+      50,
+      51,
+      52,
+      53
+    ]
+  },
+  "framePath": "frames/{index:02d}.png",
+  "feetBaseline": 70
+}

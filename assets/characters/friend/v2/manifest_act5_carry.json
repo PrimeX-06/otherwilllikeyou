@@ -1,0 +1,117 @@
+{
+  "character": "friend",
+  "frameWidth": 48,
+  "frameHeight": 72,
+  "sheet": "friend_sheet_act5_carry.png",
+  "frames": 60,
+  "animations": {
+    "idle_down": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "idle_left": [
+      9
+    ],
+    "idle_right": [
+      10
+    ],
+    "idle_up": [
+      11
+    ],
+    "walk_right": [
+      12,
+      13,
+      14,
+      15
+    ],
+    "walk_left": [
+      16,
+      17,
+      18,
+      19
+    ],
+    "walk_down": [
+      20,
+      21,
+      22,
+      23
+    ],
+    "walk_up": [
+      24,
+      25,
+      26,
+      27
+    ],
+    "wave": [
+      28
+    ],
+    "talk": [
+      29
+    ],
+    "pickup": [
+      30
+    ],
+    "lean_left": [
+      31
+    ],
+    "sit_left": [
+      32
+    ],
+    "offer": [
+      33
+    ],
+    "shy": [
+      34
+    ],
+    "lean_back": [
+      35
+    ],
+    "dribble": [
+      36,
+      37,
+      38,
+      39
+    ],
+    "feint": [
+      40,
+      41,
+      42,
+      43
+    ],
+    "tackle": [
+      44,
+      45,
+      46
+    ],
+    "shoot": [
+      47,
+      48,
+      49
+    ],
+    "celebrate": [
+      50,
+      51
+    ],
+    "sort": [
+      52,
+      53,
+      54,
+      55
+    ],
+    "carry_front": [
+      56,
+      57,
+      58,
+      59
+    ]
+  },
+  "framePath": "frames/{index:02d}.png",
+  "feetBaseline": 70
+}

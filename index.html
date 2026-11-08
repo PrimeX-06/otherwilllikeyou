@@ -5,15 +5,284 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>我们的故事 · 像素叙事</title>
 <style>
-  html,body{margin:0;height:100%;background:#050407;color:#f2e9da;display:grid;place-items:center;
-    font:16px/1.6 "Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif}
-  a{color:#c96b5a}
+  :root{
+    --ink:#f2e9da;
+    --warm:#ffd497;
+    --accent:#c96b5a;
+    --line:rgba(219,173,141,.32);
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0;min-height:100%}
+  body{
+    background:#0b080d;
+    color:var(--ink);
+    font:16px/1.7 "Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    display:grid;
+    place-items:center;
+    padding:32px 20px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* 开始页用最新的散场 CG 压暗做底，和第三幕收尾接上 */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background:url("assets/cg/act5/story_g04_exit_512.png") center/cover no-repeat;
+    image-rendering:pixelated;
+    opacity:.55;
+    filter:saturate(.9);
+  }
+  body::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    background:
+      radial-gradient(ellipse at 50% 45%,rgba(12,8,14,.28),rgba(12,8,14,.93) 72%),
+      linear-gradient(180deg,rgba(10,7,12,.4),rgba(10,7,12,.92));
+  }
+  main{
+    position:relative;
+    z-index:1;
+    width:min(780px,100%);
+    padding:clamp(26px,4.5vw,52px);
+    border:1px solid var(--line);
+    background:rgba(20,15,24,.84);
+    box-shadow:0 24px 80px rgba(0,0,0,.62);
+    backdrop-filter:blur(6px);
+  }
+  .kicker{
+    margin:0 0 10px;
+    color:var(--warm);
+    font-size:11px;
+    letter-spacing:.42em;
+    text-transform:uppercase;
+  }
+  h1{
+    margin:0;
+    font-size:clamp(38px,6vw,68px);
+    font-weight:500;
+    letter-spacing:.08em;
+    line-height:1.1;
+    text-shadow:0 6px 26px rgba(0,0,0,.55);
+  }
+  .sub{
+    margin:14px 0 0;
+    color:#ffe7c8;
+    font-size:clamp(17px,1.8vw,23px);
+    letter-spacing:.04em;
+  }
+  .lead{
+    margin:18px 0 0;
+    color:#cdbfb6;
+    font-size:14px;
+    line-height:1.9;
+    max-width:62ch;
+  }
+  .actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin:26px 0 0;
+  }
+  .actions a,.actions button{
+    display:inline-block;
+    font:inherit;
+    font-size:17px;
+    padding:12px 22px;
+    border-radius:4px;
+    border:1px solid var(--line);
+    text-decoration:none;
+    color:var(--ink);
+    background:rgba(112,81,84,.62);
+    cursor:pointer;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .actions a:hover,.actions a:focus-visible,
+  .actions button:hover,.actions button:focus-visible{
+    background:#986761;
+    border-color:#ffe1b8;
+    outline:none;
+  }
+  .actions .primary{
+    background:var(--accent);
+    border-color:#e2a08d;
+    color:#fff6ec;
+  }
+  .actions .primary:hover,.actions .primary:focus-visible{
+    background:#d87b68;
+  }
+  .progress{
+    margin:12px 0 0;
+    color:#d9c4b4;
+    font-size:13px;
+  }
+  .roadmap{
+    list-style:none;
+    display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:10px;
+    margin:30px 0 0;
+    padding:18px 0 0;
+    border-top:1px solid var(--line);
+  }
+  .roadmap li{
+    position:relative;
+    padding-left:14px;
+    color:#bfb0a8;
+    font-size:12px;
+    line-height:1.55;
+  }
+  .roadmap li::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:.55em;
+    width:5px;
+    height:5px;
+    background:var(--warm);
+    box-shadow:0 0 0 3px rgba(255,212,151,.12);
+  }
+  .roadmap b{
+    display:block;
+    color:#ffe7c8;
+    font-weight:500;
+    font-size:13px;
+  }
+  .note{
+    margin:24px 0 0;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    color:#9f928c;
+    font-size:12px;
+    line-height:1.8;
+  }
+  @media (max-width:640px){
+    body{padding:20px 14px}
+    main{padding:24px 20px}
+    .roadmap{grid-template-columns:1fr 1fr}
+    .actions{flex-direction:column}
+    .actions a,.actions button{text-align:center}
+  }
 </style>
-<script>
-  location.replace("prototype.html" + location.search + location.hash);
-</script>
 </head>
 <body>
-<p><a href="prototype.html">开始 · Start</a></p>
+<main>
+  <p class="kicker">A PIXEL STORY</p>
+  <h1>我们的故事</h1>
+  <p class="sub">从楼道里的那一局，到走廊里那句还没说出口的话。</p>
+  <p class="lead">
+    第一幕 · 手机上的那一局；第二幕 · 黑板报与晚间广播；
+    第三幕 · 藏不住的心事与六个普通的课间。
+    从这里开始，一路播到最新的收尾。
+  </p>
+
+  <div class="actions">
+    <button id="start" class="primary" type="button">开始完整故事</button>
+    <a id="resume" class="secondary" href="#" hidden>继续上次</a>
+  </div>
+  <p id="progress" class="progress" hidden></p>
+
+  <ol class="roadmap" aria-label="完整故事流程">
+    <li><b>第一幕</b><span>楼道 · 手机里的那一局</span></li>
+    <li><b>第二幕</b><span>学校线 · 黑板报 · 晚间广播</span></li>
+    <li><b>放学后</b><span>白色护栏</span></li>
+    <li><b>第三幕</b><span>藏不住的心事 · 校园日常</span></li>
+    <li><b>收尾</b><span>走廊里的那句话 · 本子还没还</span></li>
+  </ol>
+
+  <p class="note">
+    从头开始会清空这台设备上的剧情进度；想接着玩请用「继续上次」。<br>
+    建议使用 Chrome。键盘：WASD / 方向键移动，E / Enter 推进，空格互动。
+  </p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  // 全流程用到的存档键。开始完整故事时一并清掉，
+  // 否则校园日常会跳过上一轮已经做完的日期。
+  var KEYS = [
+    "our-story-act2-corridor-flow-v2",
+    "our-story-act2-board-v2",
+    "our-story-act2-board-preview-v1",
+    "our-story-act2-preview-v1",
+    "our-story-act3-broadcast-v1",
+    "our-story-act5-daily-v1",
+    "our-story-act5-narrative-v1"
+  ];
+  var DAILY = [
+    "errandCompleted", "soloJurieCompleted", "searchCompleted",
+    "soloYunoCompleted", "wordGameCompleted", "ballGameCompleted"
+  ];
+
+  function read(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "null"); }
+    catch (error) { return null; }
+  }
+
+  var daily = read("our-story-act5-daily-v1") || {};
+  var narrative = read("our-story-act5-narrative-v1") || {};
+  var act3 = read("our-story-act3-broadcast-v1");
+  var board = read("our-story-act2-board-v2");
+  var flow = read("our-story-act2-corridor-flow-v2");
+
+  var dailyDone = !!daily.chapterDailyDone ||
+    DAILY.every(function (key) { return !!daily[key]; });
+  var dailyAny = DAILY.some(function (key) { return !!daily[key]; });
+
+  var resume = null;
+  if (narrative.disclosureHeard) {
+    resume = {
+      href: "act5/narrative/index.html?phase=after",
+      label: "重看收尾 · 本子还没还",
+      note: "已经看到最新剧情。可以重看收尾，或从头再走一次。"
+    };
+  } else if (dailyDone) {
+    resume = {
+      href: "act5/narrative/index.html?phase=after",
+      label: "继续 · 走廊里的那句话",
+      note: "六个日常都做完了，收尾在走廊等你。"
+    };
+  } else if (dailyAny || narrative.introCompleted) {
+    resume = {
+      href: "act5/daily.html",
+      label: "继续 · 校园日常",
+      note: "从下一个没做完的日期继续。"
+    };
+  } else if (act3) {
+    resume = {
+      href: "act3/broadcast.html?from=bridge",
+      label: "继续 · 晚间广播",
+      note: "从广播室继续（会重播这一段）。"
+    };
+  } else if (board || flow) {
+    resume = {
+      href: "school-preview.html",
+      label: "继续 · 学校线",
+      note: "从学校线继续。"
+    };
+  }
+
+  var resumeEl = document.getElementById("resume");
+  var progressEl = document.getElementById("progress");
+  if (resume) {
+    resumeEl.href = resume.href;
+    resumeEl.textContent = resume.label;
+    resumeEl.hidden = false;
+    progressEl.textContent = resume.note;
+    progressEl.hidden = false;
+  }
+
+  document.getElementById("start").addEventListener("click", function () {
+    try {
+      KEYS.forEach(function (key) { localStorage.removeItem(key); });
+    } catch (error) { /* 无痕模式清不掉，也不影响开始 */ }
+    location.href = "prototype.html";
+  });
+})();
+</script>
 </body>
 </html>

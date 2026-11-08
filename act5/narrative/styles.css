@@ -1,0 +1,33 @@
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#241e2b;color:#fff1e3;font-family:"Microsoft YaHei",system-ui,sans-serif}
+#stage{position:fixed;inset:0;overflow:hidden}
+#scene,#cg{position:absolute;left:50%;top:50%;width:max(100vw,177.7778dvh);height:max(100dvh,56.25vw);transform:translate(-50%,-50%);image-rendering:pixelated}
+#cg{object-fit:cover}
+[hidden]{display:none!important}
+#shade{position:absolute;inset:0;pointer-events:none;background:#1d1b2a;opacity:0;transition:opacity .45s}
+#chapter{position:absolute;left:22px;top:18px;font-size:15px;letter-spacing:.12em;text-shadow:0 2px 5px #0009}
+#dialog{position:absolute;left:6%;right:6%;bottom:6%;min-height:15%;padding:.8em 1.2em;background:#17131de3;border:1px solid #e1bea878;box-shadow:0 10px 30px #0008;cursor:pointer}
+#dialog b{display:block;color:#ffcca1;font-size:clamp(16px,1.5vw,24px);font-weight:400;letter-spacing:.15em}
+#dialog p{margin:.35em 0;color:#fff2e5;font-size:clamp(20px,2.1vw,36px);line-height:1.6;min-height:1.6em}
+#dialog small{float:right;color:#ffffff96;font-size:13px}
+#emotion{--emotion:1;position:absolute;inset:0;background:radial-gradient(ellipse at 50% 48%,transparent 8%,rgba(190,69,69,calc(var(--emotion)*.35)) 100%);pointer-events:none}
+#emotion[data-kind="quiet"]{background:radial-gradient(ellipse at 50% 48%,transparent 10%,rgba(35,46,83,calc(var(--emotion)*.65)) 100%)}
+#blush{position:absolute;left:9%;top:8%;width:min(28vw,380px);height:65%;object-fit:contain;image-rendering:pixelated;opacity:calc(var(--emotion)*.82);mask-image:linear-gradient(#000 72%,transparent);filter:drop-shadow(0 10px 22px #22111bc0)}
+#emotion[data-kind="quiet"] #blush{display:none}
+.emotion-copy{position:absolute;left:35%;right:5%;top:11%;padding:22px 26px;background:#1d1828ee;border:1px solid #ffdcbd88;pointer-events:auto;box-shadow:0 12px 35px #0007}
+.emotion-copy b{display:block;font-size:clamp(23px,2.2vw,38px);font-weight:400}
+.emotion-copy p{font-size:clamp(17px,1.5vw,24px);line-height:1.55}
+.emotion-copy small{display:block;margin-top:10px;color:#eadbd0b5}
+#heartGame{display:block;width:100%;height:auto;max-height:43vh;object-fit:contain;margin:14px 0;border:2px solid #c59380;image-rendering:pixelated;touch-action:none;cursor:grab}
+#heartGame:active{cursor:grabbing}
+.emotion-copy .focus-message{min-height:1.5em;margin:9px 0;font-size:clamp(16px,1.35vw,22px);color:#ffddba}
+button,.actions a{display:inline-block;font:inherit;font-size:clamp(15px,1.3vw,20px);color:#fff1e3;background:#705154;border:1px solid #dbad8d;border-radius:4px;padding:9px 14px;text-decoration:none;cursor:pointer}
+button:hover,.actions a:hover,button:focus-visible,.actions a:focus-visible{background:#986761;outline:1px solid #ffe1b8}
+#choice,#end{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(630px,90vw);padding:26px;background:#1d1828f2;border:1px solid #dbad8d;box-shadow:0 16px 42px #0009}
+#choice p{font-size:clamp(20px,2vw,30px);margin:0 0 18px}
+#choiceItems,.actions{display:flex;flex-wrap:wrap;gap:10px}
+#end h1{font-size:clamp(26px,2.6vw,38px);margin:0 0 12px}
+#end p{font-size:clamp(17px,1.6vw,25px);line-height:1.8}
+#chapter,#dialog,#choice,#end{z-index:3}
+#emotion{z-index:2}
+@media(max-width:650px){#blush{left:2%;top:2%;width:37vw;height:27%}.emotion-copy{left:5%;right:5%;top:27%;padding:15px}#heartGame{max-height:34vh}#dialog{left:4%;right:4%;bottom:4%}}

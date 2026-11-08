@@ -26,3 +26,5 @@ desktop.ini
 
 # Vercel CLI link state
 .vercel/
+
+.vercel

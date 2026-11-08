@@ -10,6 +10,17 @@
   <main id="stage" aria-label="晚间广播后的走廊">
     <canvas id="scene" width="512" height="288" aria-label="教学楼走廊"></canvas>
     <img id="cg" alt="" hidden>
+    <div id="memoryMontage" class="memory-montage" aria-label="和臣脑海里的回忆碎片" hidden>
+      <img class="memory-shard shard-door" src="../../assets/scenes/cg_doorway_wave_v2.png" alt="朱里在教室门口挥手">
+      <img class="memory-shard shard-board" src="../../assets/scenes/school_corridor_board_lowered_512.png" alt="两人画过的走廊黑板报">
+      <img class="memory-shard shard-broadcast" src="../../act2/broadcast-bridge/assets/cg_turn_to_zhuli_single_desk.png" alt="晚间广播室">
+      <img class="memory-shard shard-snack" src="assets/cg_snack_handoff_v2.png" alt="朱里在走廊递来饼干">
+      <img id="memoryPortrait" src="assets/zhuli_memory_closeup.png" alt="朱里的温柔特写">
+    </div>
+    <div id="blushCut" class="blush-cut" aria-label="朱里察觉和臣脸红" hidden>
+      <img id="blushBoy" src="assets/kazuomi_blush_closeup.png" alt="脸颊通红、慌忙移开视线的和臣">
+      <img id="blushGirl" src="assets/zhuli_memory_closeup.png" alt="关切地看向和臣的朱里">
+    </div>
     <div id="fade"></div>
     <div id="chapter">放学后 / 白色护栏</div>
     <div id="caption" hidden><b id="captionWho"></b><span id="captionLine"></span><small>E / Enter / 点击继续 · 也会自动继续</small></div>
@@ -21,8 +32,9 @@
     <div id="narration" hidden><b>旁白</b><p id="hint"></p><small>A / ← 行走 · E 互动 · 也可点右上角按钮</small></div>
     <div id="ending" hidden>
       <h1>那条走廊</h1>
-      <p>广播结束后，我们绕了远路。走到楼梯口时，谁也没急着下去。</p>
+      <p>我在护栏边脸红得说不出话，最后只来得及匆匆说声“明天见”。</p>
       <div class="actions">
+        <a href="../../act5/narrative/index.html">继续 · 藏不住的心事</a>
         <button id="replay" type="button">再走一次</button>
         <a href="../../act3/broadcast.html">返回晚间广播</a>
       </div>

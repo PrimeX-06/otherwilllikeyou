@@ -134,8 +134,28 @@ const finalLines = await act4.evaluate(() => {
   };
 });
 
+// ---- 5. after-broadcast → 第三幕剧情：故事继续在同一个 storyframe 里往下走
+await act4.evaluate(() => window.__afterBroadcast.enter('ending'));
+await act4.waitForSelector('#ending:not([hidden])', { timeout: 5000 });
+const narrativeHref = await act4.evaluate(() =>
+  document.querySelector('#ending a[href*="act5/narrative"]')?.getAttribute('href') || '');
+await act4.evaluate(() => document.querySelector('#ending a[href*="act5/narrative"]')?.click());
+const narrative = await waitFrame('act5/narrative/index.html');
+await narrative.waitForFunction(
+  () => window.__narrative && window.__narrative.scene !== 'loading',
+  null,
+  { timeout: 20000 }
+);
+await narrative.waitForFunction(
+  () => window.__narrative?.scene === 'nextDay',
+  null,
+  { timeout: 20000 }
+).catch(() => {});
+const narrativeScene = await narrative.evaluate(() => window.__narrative?.scene || '');
+const topAfterStory = await page.evaluate(() => location.href);
+
 const topUrl = await page.evaluate(() => location.href);
-console.log(JSON.stringify({ started, firstLine, boardLeaveVisible, bridgeUrl, act3Url, caption, lean, finalLines, topUrl, errors }, null, 2));
+console.log(JSON.stringify({ started, firstLine, boardLeaveVisible, bridgeUrl, act3Url, caption, lean, finalLines, narrativeHref, narrativeScene, topAfterStory, topUrl, errors }, null, 2));
 
 const failures = [];
 if (!started.story.active || !started.story.shown) failures.push('the story frame did not open');
@@ -159,6 +179,9 @@ if (finalLines.border !== '0px') failures.push(`final narration has a border: ${
 if (finalLines.align !== 'center') failures.push(`final narration is ${finalLines.align}-aligned`);
 if (finalLines.who !== 'rgb(255, 201, 143)') failures.push(`final speaker color is ${finalLines.who}`);
 if (!finalLines.text) failures.push('final narration never printed');
+if (!narrativeHref.includes('act5/narrative/index.html')) failures.push(`after-broadcast ending points at ${narrativeHref || '(nothing)'}`);
+if (narrativeScene !== 'nextDay') failures.push(`story frame reached narrative scene ${narrativeScene || '(none)'}`);
+if (!topAfterStory.includes('prototype.html')) failures.push(`the narrative left the top page: ${topAfterStory}`);
 if (errors.length) failures.push(...errors);
 
 await browser.close();

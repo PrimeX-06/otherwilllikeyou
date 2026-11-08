@@ -59,24 +59,42 @@
   D.FRAME_H = FH;
 
   // 三人的 v2 精灵表保留原有前段帧位，新增剧情动作在末尾。
-  // 闺蜜的侧面、背面与四向行走已替换原占位帧。
+  // 由乃的侧面、背面与四向行走已替换原占位帧。
   D.FRAMES = {
     boy: {
       idleDown: [0, 1], idleLeft: [2, 2], idleRight: [3, 3], idleUp: [4, 4],
-      walkDown: [5, 8], walkLeft: [9, 12], walkRight: [13, 16], walkUp: [17, 20]
+      walkDown: [5, 8], walkLeft: [9, 12], walkRight: [13, 16], walkUp: [17, 20],
+      pickup: [25, 25], carry: [43, 46]
     },
     girl: {
       idleDown: [0, 1], idleLeft: [2, 2], idleRight: [3, 3], idleUp: [4, 4],
-      walkDown: [5, 8], walkLeft: [9, 12], walkRight: [13, 16], walkUp: [17, 20]
+      walkDown: [5, 8], walkLeft: [9, 12], walkRight: [13, 16], walkUp: [17, 20],
+      pickup: [27, 27], carry: [50, 53]
     },
     friend: {
       idleDown: [0, 8], idleLeft: [9, 9], idleRight: [10, 10], idleUp: [11, 11],
-      walkRight: [12, 15], walkLeft: [16, 19], walkDown: [20, 23], walkUp: [24, 27]
+      walkRight: [12, 15], walkLeft: [16, 19], walkDown: [20, 23], walkUp: [24, 27],
+      pickup: [30, 30], carry: [56, 59]
+    },
+    // 背景路人：npc_generated 四向行走表，每张 4 帧
+    npcBoy: {
+      idleDown: [0, 0], idleLeft: [0, 0], idleRight: [0, 0], idleUp: [0, 0],
+      walkDown: [0, 3], walkLeft: [0, 3], walkRight: [0, 3], walkUp: [0, 3]
+    },
+    npcGirl: {
+      idleDown: [0, 0], idleLeft: [0, 0], idleRight: [0, 0], idleUp: [0, 0],
+      walkDown: [0, 3], walkLeft: [0, 3], walkRight: [0, 3], walkUp: [0, 3]
     }
   };
 
-  const IDLE_FPS = { boy: 3, girl: 3, friend: 7 };
-  const WALK_FPS = { boy: 9, girl: 9, friend: 7 };
+  // 路人的四个方向各是一张单独的行走表，按朝向换图
+  const NPC_SHEETS = {
+    npcBoy: { down: "npcBoyDown", up: "npcBoyUp", left: "npcBoyLeft", right: "npcBoyRight" },
+    npcGirl: { down: "npcGirlDown", up: "npcGirlUp", left: "npcGirlLeft", right: "npcGirlRight" }
+  };
+
+  const IDLE_FPS = { boy: 3, girl: 3, friend: 7, npcBoy: 3, npcGirl: 3 };
+  const WALK_FPS = { boy: 9, girl: 9, friend: 7, npcBoy: 8, npcGirl: 8 };
 
   /** 影子：一格椭圆，落在脚底，让角色不像贴在墙上。 */
   D.shadow = function (ctx, x, y, w) {
@@ -89,33 +107,135 @@
     ctx.restore();
   };
 
-  /** 画一个角色。x 是脚底中心，y 是脚底基线。 */
+  /** 画一个角色。x 是脚底中心，y 是脚底基线。
+   *  dir 既可以是老的 ±1（横版，正/背对镜头只分左右），
+   *  也可以是 "up" / "down" / "left" / "right"（俯视球场用四向帧）。
+   *  站着时看 a.face 决定朝哪边，没写就正面。 */
   D.drawActor = function (ctx, a, t) {
-    const sheet = D.img[a.key];
     const F = D.FRAMES[a.key];
-    if (!sheet || !F) return;
+    if (!F) return;
 
+    const named = typeof a.dir === "string" ? a.dir : null;
+    const face = a.face || "down";
+    // 路人一个方向一张表；三主角仍然共用一整张
+    const dirName = named || face;
+    const sheetKey = NPC_SHEETS[a.key] ? (NPC_SHEETS[a.key][dirName] || a.key) : a.key;
+    const sheet = D.img[sheetKey];
+    if (!sheet) return;
     let range, fps;
-    if (a.moving) {
-      range = a.dir > 0 ? F.walkRight : F.walkLeft;
+    if (a.pose && F[a.pose]) {
+      // 剧情动作（抬箱子、弯腰）：直接指定帧段，压过走/站。
+      range = F[a.pose];
+      fps = a.pose === "carry" ? 6 : 3;
+    } else if (a.moving) {
+      if (named === "up") range = F.walkUp;
+      else if (named === "down") range = F.walkDown;
+      else if (named === "left") range = F.walkLeft;
+      else if (named === "right") range = F.walkRight;
+      else range = a.dir > 0 ? F.walkRight : F.walkLeft;
       fps = WALK_FPS[a.key] || 8;
     } else {
-      // 站着的时候一律正面——横版场景里，停下来就是转过来对着镜头
-      range = F.idleDown;
+      // 横版场景里停下来就是转过来对着镜头；俯视场里可以指定朝向
+      const idle = F["idle" + face.charAt(0).toUpperCase() + face.slice(1)];
+      range = idle || F.idleDown;
       fps = IDLE_FPS[a.key] || 3;
     }
     const n = range[1] - range[0] + 1;
     const f = range[0] + (Math.floor(t * fps + (a.phase || 0)) % n);
 
-    const s = a.scale == null ? 1 : a.scale;
+    // size 是给背景路人用的固定比例；scale 只在需要显式指定大小时才传
+    const s = (a.scale == null ? 1 : a.scale) * (a.size == null ? 1 : a.size);
     const w = FW * s, h = FH * s;
     const x = Math.round(a.x - w / 2);
     const y = Math.round(a.y - h);
 
     ctx.save();
     if (a.alpha != null) ctx.globalAlpha = a.alpha;
+    if (a.flip) {
+      // 弯腰帧有固定朝向；需要她对着另一边的箱子时，只翻这一帧
+      ctx.translate(a.x, 0);
+      ctx.scale(-1, 1);
+      ctx.translate(-a.x, 0);
+    }
     ctx.drawImage(sheet, f * FW, 0, FW, FH, x, y, w, h);
     ctx.restore();
+  };
+
+  // ---------------------------------------------------------------- 背景路人
+  // 只沿 x 来回走，不参与任何玩法。放进 extras 里和主角一起按 y 排序，
+  // 站在前面的路人会从主角身前经过，站在后面的则被挡住。
+
+  D.createCrowd = function (opts) {
+    const o = Object.assign({
+      count: 3,
+      xMin: 36, xMax: 476,
+      yMin: 206, yMax: 236,
+      speed: 22,
+      size: 0.8,
+      alpha: 0.62,
+      seed: 1
+    }, opts || {});
+
+    let seed = (o.seed >>> 0) || 1;
+    function rand() {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    }
+
+    const keys = ["npcBoy", "npcGirl"];
+    const actors = [];
+    for (let i = 0; i < o.count; i++) {
+      const dir = rand() < 0.5 ? -1 : 1;
+      actors.push({
+        key: keys[i % keys.length],
+        x: D.lerp(o.xMin, o.xMax, rand()),
+        y: D.lerp(o.yMin, o.yMax, rand()),
+        dir: dir,
+        face: dir > 0 ? "right" : "left",
+        moving: true,
+        phase: rand() * 8,
+        speed: o.speed * (0.72 + rand() * 0.56),
+        pause: rand() * 1.6,
+        hidden: false,
+        size: o.size,
+        alpha: o.alpha
+      });
+    }
+
+    return {
+      actors: actors,
+      update: function (dt) {
+        for (const a of actors) {
+          if (a.hidden) continue;
+          if (a.pause > 0) {
+            a.pause -= dt;
+            a.moving = false;
+            continue;
+          }
+          a.moving = true;
+          a.x += a.dir * a.speed * dt;
+          if (a.x < o.xMin) {
+            a.x = o.xMin;
+            a.dir = 1;
+            a.pause = 0.5 + rand() * 1.4;
+          } else if (a.x > o.xMax) {
+            a.x = o.xMax;
+            a.dir = -1;
+            a.pause = 0.5 + rand() * 1.4;
+          }
+          a.face = a.dir > 0 ? "right" : "left";
+        }
+      },
+      setHidden: function (v) { for (const a of actors) a.hidden = !!v; },
+      draw: function (ctx, t) {
+        const list = actors.filter(function (a) { return !a.hidden; })
+          .sort(function (p, q) { return p.y - q.y; });
+        for (const a of list) {
+          D.shadow(ctx, a.x, a.y + 1, D.FRAME_W * a.size);
+        }
+        for (const a of list) D.drawActor(ctx, a, t);
+      }
+    };
   };
 
   // ---------------------------------------------------------------- 输入
@@ -154,6 +274,13 @@
     const l = D.keys["a"] || D.keys["arrowleft"];
     const r = D.keys["d"] || D.keys["arrowright"];
     return (r ? 1 : 0) - (l ? 1 : 0);
+  };
+
+  /** 纵深轴：W / 上 往远处，S / 下 往近处。横版游戏不用它。 */
+  D.axisY = function () {
+    const u = D.keys["w"] || D.keys["arrowup"];
+    const d = D.keys["s"] || D.keys["arrowdown"];
+    return (u ? 1 : 0) - (d ? 1 : 0);
   };
 
   D.holdAdvance = function () {
@@ -282,7 +409,99 @@
     click: function () { tone(520, 0.07, 0.016, "triangle"); },
     right: function () { tone(740, 0.1, 0.02); setTimeout(() => tone(990, 0.14, 0.018), 90); },
     wrong: function () { tone(220, 0.16, 0.018, "square"); },
-    step: function () { tone(120, 0.03, 0.006, "triangle"); }
+    step: function () { tone(120, 0.03, 0.006, "triangle"); },
+    bell: function () {
+      tone(880, 0.42, 0.016);
+      setTimeout(function () { tone(880, 0.42, 0.013); }, 380);
+    }
+  };
+
+  // ---------------------------------------------------------------- 主动发起 / 即时反应
+  // 四个小游戏共用这一层。原先的互动基本都是「走到点按 E → 弹一段对白」，
+  // 玩家只能回应场景，很少能自己起个头；角色也不会对他刚做的动作马上接一句。
+  //
+  // D.react() 刻意**不**走 D.lines()：不弹对白框、不触发 dialog:start、不冻结走位，
+  // 说完就散。所以走路、接球、猜词都不会被打断。两句连着发就排成一来一回。
+  // 「主动发起」统一由 F（或左下角那个按钮）走 D.poke()，各游戏自己注册 handler。
+
+  const react = {
+    root: null, btn: null, queue: [], timer: 0, current: null,
+    last: null, count: 0
+  };
+  let pokeHandler = null;
+
+  D.initReact = function (nodes) {
+    react.root = nodes.root;
+    react.btn = nodes.btn;
+    // 不拦这一下的话，点胶囊会冒泡到 #stage，顺手把正在读的对白翻过去
+    react.btn.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    react.btn.addEventListener("click", function () {
+      D.audio.unlock();
+      D.poke();
+    });
+    D.on("dialog:start", function () { react.btn.classList.add("dim"); });
+    D.on("dialog:end", function () { react.btn.classList.remove("dim"); });
+  };
+
+  function nextReact() {
+    if (react.current || !react.queue.length || !react.root) return;
+    const r = react.queue.shift();
+    react.current = r;
+    react.last = { who: r.who, text: r.text };
+    react.count++;
+    react.root.innerHTML = "";
+    const b = document.createElement("b");
+    b.textContent = r.who;
+    const s = document.createElement("span");
+    s.textContent = r.text;
+    react.root.append(b, s);
+    react.root.hidden = false;
+    requestAnimationFrame(function () {
+      if (react.current === r) react.root.classList.add("show");
+    });
+    D.emit("react", react.last);
+    react.timer = setTimeout(function () {
+      react.root.classList.remove("show");
+      react.current = null;
+      react.timer = setTimeout(function () {
+        if (!react.current && react.root) react.root.hidden = true;
+        nextReact();
+      }, 170);
+    }, r.ms || 1700);
+  }
+
+  /** 说一句就散的短反应。who 是显示名，ms 默认 1700。 */
+  D.react = function (who, text, ms) {
+    react.queue.push({ who: who, text: text, ms: ms || 1700 });
+    nextReact();
+  };
+
+  /** 换场、收尾、退出时清干净，别把上一场的半句话留到下一场。 */
+  D.clearReact = function () {
+    clearTimeout(react.timer);
+    react.queue.length = 0;
+    react.current = null;
+    if (react.root) {
+      react.root.classList.remove("show");
+      react.root.hidden = true;
+    }
+  };
+
+  /** 左下角那颗胶囊的文案；传 falsy 就收起来。 */
+  D.reactHint = function (label) {
+    if (!react.btn) return;
+    if (!label) { react.btn.hidden = true; return; }
+    react.btn.textContent = label;
+    react.btn.hidden = false;
+  };
+
+  /** 注册当前小游戏的「玩家主动发起」。每个游戏 start() 里设、dispose() 里清。 */
+  D.onPoke = function (fn) { pokeHandler = typeof fn === "function" ? fn : null; };
+  D.poke = function () { if (pokeHandler) pokeHandler(); };
+
+  D.reactStats = function () {
+    return { count: react.count, last: react.last,
+             queued: react.queue.length + (react.current ? 1 : 0) };
   };
 
   // ---------------------------------------------------------------- 小工具
