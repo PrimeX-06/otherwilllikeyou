@@ -28,17 +28,20 @@ const report = await page.evaluate(async () => {
 
   const expected = [
     ['这关我打了好几遍了，你看着。', 'SISTER_AI'],
+    ['看着就行，有情况就喊我。', 'SISTER_AI'],
     ['左边那个，别急着冲。', 'SISTER_AI'],
     ['等他们换弹再上。', 'SISTER_AI'],
     ['你看，这样一枪一个。', 'SISTER_AI'],
     ['这把枪后坐力大，点着打。', 'SISTER_AI'],
     ['等一下，这关打完。', 'SISTER_AI'],
+    ['我？……行吧。', 'SISTER_AI'],
     // Still hers while the still is up: the controls follow the picture.
     ['喏，给你。', 'SISTER_AI'],
     ['我去看电视，你打。', 'PLAYER'],
     ['别站中间，贴着墙走。', 'PLAYER'],
     ['打不过就躲，别硬顶。', 'PLAYER'],
     ['——回家吃饭了！', 'PLAYER'],
+    ['……这就来。', 'PLAYER'],
     ['我妈叫你了，手机给我吧。', 'PLAYER']
   ];
 
@@ -66,6 +69,7 @@ const report = await page.evaluate(async () => {
   const lines = [];
   for (const snap of out.seen) {
     if (!snap.text) continue;
+    if (!expected.some(([text]) => text === snap.text)) continue;
     if (lines.length && lines[lines.length - 1].text === snap.text) continue;
     lines.push(snap);
   }
@@ -86,9 +90,13 @@ const report = await page.evaluate(async () => {
   }
 
   // She is named in the subtitles now, not called by her relation to him.
-  const her = lines.filter((l) => l.text !== '——回家吃饭了！');
+  const his = new Set(['我？……行吧。', '……这就来。']);
+  const her = lines.filter((l) => l.text !== '——回家吃饭了！' && !his.has(l.text));
   const unnamed = her.find((l) => l.speaker !== '朱里：');
   if (unnamed) fail(`her line "${unnamed.text}" is credited to ${unnamed.speaker}`);
+  for (const line of lines.filter((l) => his.has(l.text))) {
+    if (line.speaker !== '和臣：') fail(`his line "${line.text}" is credited to ${line.speaker}`);
+  }
 
   const hIdx = lines.findIndex((l) => l.text === '喏，给你。');
   if (hIdx < 0) fail('handover line never played');

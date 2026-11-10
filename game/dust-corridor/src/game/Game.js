@@ -31,7 +31,9 @@ import { ControlBus, CONTROL_MODE } from '../control/ControlBus.js';
 import { SisterAI } from '../control/SisterAI.js';
 import { ControlPanel } from '../ui/ControlPanel.js';
 import { Subtitle } from '../ui/Subtitle.js';
-import { StoryRunner, PHONE_BEATS } from '../story/StoryScript.js';
+import { StoryRunner, PHONE_BEATS, PLAYER_FIRST_BEATS } from '../story/StoryScript.js';
+import { SegmentStats } from '../story/SegmentStats.js';
+import { PromptCoach } from '../story/PromptCoach.js';
 import { Outro } from '../ui/Outro.js';
 import { CgCut } from '../ui/CgCut.js';
 
@@ -339,9 +341,21 @@ export class Game {
     this.hud = new HUD(this.uiRoot);
     this.menu = new Menu(this.uiRoot, { audio: this.audio });
     this.controlPanel = new ControlPanel(this.uiRoot, {
-      onPrompt: (kind) => this.sister.issueIntent(kind)
+      onPrompt: (kind, label) => {
+        if (this.state !== 'playing' || this.frozen || this.cgPlaying || !this.input.aiControlled) return;
+        this.story.enqueue([{ speaker: '和臣', text: label.replace(/[！。]$/, '') + '！' }],
+          { key: `prompt-${kind}`, mode: CONTROL_MODE.SISTER_AI });
+        this.sister.issueIntent(kind);
+      }
     });
-    this.sister.onFeedback = (text, ok) => this.controlPanel.say(text, ok);
+    this.sister.onFeedback = (text, ok, meta) => {
+      this.controlPanel.say(text, ok);
+      if (meta.important) this.story.enqueue([{ speaker: '朱里', text }],
+        { key: 'prompt-report', mode: CONTROL_MODE.SISTER_AI });
+    };
+    this.segmentStats = new SegmentStats();
+    this.promptCoach = new PromptCoach();
+    this.firstControl = qp.get('first') === 'player' ? 'player' : 'sister';
 
     this.subtitle = new Subtitle(this.uiRoot);
     this.story = new StoryRunner({
@@ -483,6 +497,7 @@ export class Game {
     };
 
     this.match.onKill = (event) => {
+      this.segmentStats.recordKill(event, this.input.mode);
       this.hud.addKill(event);
       if (event.involvesPlayer === 'killer') {
         if (event.streak === 3) this.hud.announce('Triple', 'three without dying');
@@ -545,7 +560,11 @@ export class Game {
 
   // ------------------------------------------------------------ match flow
 
-  startMatch() {
+  startMatch({ firstControl = this.firstControl } = {}) {
+    this.firstControl = firstControl === 'player' ? 'player' : 'sister';
+    this.segmentStats.reset();
+    this.sister.resetPrompts();
+    this.promptCoach.reset();
     this.menu.hide();
     this.menu.hideBoard();
     this.hud.clear();
@@ -593,7 +612,7 @@ export class Game {
     // The first line may hand her the controller, so the script starts before
     // the mouse is asked for — otherwise a match would take the pointer lock
     // and drop it again on the opening beat.
-    this.story.start();
+    this.story.start(this.firstControl === 'player' ? PLAYER_FIRST_BEATS : PHONE_BEATS);
     if (!this.input.aiControlled) this.input.requestLock();
     this.hud.announce('Contact expected', 'Suq Al-Rimal — 13:40');
     this._firstFramePending = true;
@@ -630,6 +649,7 @@ export class Game {
    * something a character just did or said, never as an interface event.
    */
   _onStoryBeat(beat) {
+    beat.onShow?.();
     if (beat.freeze) this.frozen = true;
     this.subtitle.show(beat.speaker, beat.text);
 
@@ -683,7 +703,7 @@ export class Game {
     if (this.embed) {
       // The host shows the act card: one story, one card, one way back.
       this.outro.hide();
-      this.onSegmentEnd?.();
+      this.onSegmentEnd?.(this.segmentStats.result(this.match.scores, this.sister.promptStats));
       return;
     }
     this.outro.show({ act: '第一幕', title: '结束', note: '手机上的那一局，到此为止。' });
@@ -854,10 +874,11 @@ export class Game {
     if (!this.input.aiControlled) this.playerControlTime += dt;
     this.storyCtx.playerTime = this.playerControlTime;
     this.storyCtx.forceCall = this.forceCall;
+    Object.assign(this.storyCtx, this.segmentStats.context(this.player, this.weapon, this.input.mode, this.sister.promptStats));
 
     // The script runs on the simulation clock, so a line's hold is the same
     // number of seconds whatever the machine is doing.
-    this.story.update(dt, this.storyCtx);
+    if (!this.cgPlaying) this.story.update(dt, this.storyCtx);
 
     // A frozen line, or a full-frame cut, stops the world and keeps reading.
     // The call has to land while nothing is moving, or it is just another
@@ -869,6 +890,10 @@ export class Game {
     // Before anything reads the controls: she has to have decided what to hold
     // this step, or the frame runs on last step's intent.
     if (this.input.aiControlled && this.sister) this.sister.update(dt);
+    else this.sister.observe(dt);
+    this.controlPanel.setContext(this.input.aiControlled ? this.sister.contextualPrompt() : null);
+    this.promptCoach.update(dt, { sister: this.sister, player: this.player, story: this.story,
+      panel: this.controlPanel, enabled: !this.input.aiControlled && this.story.running && this.story.reactionsEnabled });
 
     if (this.player.alive) {
       const firing = this.input.action('fire');
@@ -1251,6 +1276,7 @@ export class Game {
 
   /** Global keys that work in every state. */
   handleKey(code) {
+    if (this.state === 'playing' && !this.frozen && !this.cgPlaying && this.controlPanel?.handleKey(code)) return true;
     // Development handover. F1 is not bound to anything in the game and sits
     // far from every key the hands actually use, so it cannot be hit by
     // accident mid-firefight. Pressing it also stops the beat sheet — a script

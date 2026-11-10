@@ -28,7 +28,7 @@ const toHost = (msg) => host?.postMessage({ source: 'dust-corridor', ...msg }, '
 
 const game = new Game(canvas, uiRoot);
 game.embed = EMBED;
-game.onSegmentEnd = () => toHost({ type: 'result' });
+game.onSegmentEnd = (result) => toHost({ type: 'result', result });
 // The host keeps the frame black until there is a picture worth fading up: the
 // menu's orbit is not part of the phone.
 game.onSegmentStart = () => toHost({ type: 'started' });
@@ -52,7 +52,7 @@ if (EMBED) {
   window.addEventListener('message', (e) => {
     const d = e.data;
     if (!d || d.source !== 'phone-story') return;
-    if (d.type === 'start' && game.state === 'menu') game.startMatch();
+    if (d.type === 'start' && game.state === 'menu') game.startMatch({ firstControl: d.firstControl });
     else if (d.type === 'switchControl' && typeof d.mode === 'string') {
       game.setControlMode(d.mode, { gesture: false });
     } else if (d.type === 'exit') {

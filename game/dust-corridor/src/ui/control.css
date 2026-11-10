@@ -60,12 +60,16 @@
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
+  max-width: calc(100% - 32px);
+  flex-wrap: wrap;
+  justify-content: center;
   transition: opacity 200ms ease;
 }
 
 #cp-prompts.muted { opacity: 0.28; }
 
 .cp-chip {
+  position: relative;
   pointer-events: auto;
   font: inherit;
   font-size: 11px;
@@ -75,7 +79,7 @@
   background: rgba(12, 13, 15, 0.72);
   border: 1px solid var(--line);
   border-radius: 3px;
-  padding: 7px 11px 6px;
+  padding: 7px 21px 6px 11px;
   cursor: pointer;
   white-space: nowrap;
   transition: color 140ms ease, border-color 140ms ease, background 140ms ease, transform 90ms ease;
@@ -88,6 +92,22 @@
 }
 
 .cp-chip:active:not(:disabled) { transform: translateY(1px); }
+
+.cp-chip kbd {
+  position: absolute;
+  right: 5px;
+  top: 3px;
+  font: 9px var(--sans);
+  opacity: 0.65;
+}
+.cp-chip.contextual { border-color: var(--accent-soft); }
+#cp-prompts.muted:has(.calling) { opacity: 1; }
+.cp-chip.calling:disabled {
+  color: var(--accent-soft);
+  opacity: 1;
+  border-color: var(--accent-soft);
+  animation: cp-breathe 0.5s ease-in-out 3;
+}
 
 .cp-chip:disabled {
   cursor: default;

@@ -67,7 +67,7 @@ const STUCK_WINDOW = 0.6;
 const STUCK_DISTANCE = 0.22;
 const INTENT_TTL = {
   COVER: 4.0, ADVANCE: 4.0, HOLD: 2.0, RELOAD: 1.2,
-  LOOK_LEFT: 1.4, LOOK_RIGHT: 1.4
+  LOOK_LEFT: 1.4, LOOK_RIGHT: 1.4, LOOK_BACK: 1.8
 };
 
 export class SisterAI {
@@ -126,6 +126,7 @@ export class SisterAI {
 
     // ---- intents (player prompts)
     this.intent = null;        // { kind, ttl }
+    this.resetPrompts();
 
     this.onFeedback = null;    // (text, ok) => void
     this._hit = new RayHit();
@@ -135,6 +136,10 @@ export class SisterAI {
   // ------------------------------------------------------------------ lifecycle
 
   onControlTaken(active) {
+    this._promptScan = null;
+    this._coverReport = null;
+    this._reloadReport = null;
+    this._scanTimer = 0;
     this.active = active;
     if (active) {
       this._lastPos.copy(this.player.position);
@@ -168,6 +173,7 @@ export class SisterAI {
     const bus = this.bus;
     bus.aiBeginStep();
 
+    this._promptClock += dt;
     this.stateTime += dt;
     this.trackTime = Math.max(0, this.trackTime);
     this._tickIntent(dt);
@@ -175,6 +181,9 @@ export class SisterAI {
     // Dead: the match is waiting on a keypress that only a human would give.
     // Press it for her, at a rate that cannot outrun the respawn delay.
     if (!this.player.alive) {
+      this._promptScan = null;
+      this._coverReport = null;
+      this._reloadReport = null;
       this._deadTimer = (this._deadTimer ?? 0) + dt;
       if (this._deadTimer > 0.35) {
         this._deadTimer = 0;
@@ -186,6 +195,7 @@ export class SisterAI {
 
     this._readDamage();
     this._sense(dt);
+    this._updatePromptReports(dt);
     this._think(dt);
     this._aim(dt);
     this._move(dt);
@@ -206,6 +216,7 @@ export class SisterAI {
     const dmg = this.player.lastDamage;
     if (!dmg || dmg === this._seenDamage) return;
     this._seenDamage = dmg;
+    this._lastHitAt = this._promptClock;
     const src = dmg.source;
     if (src?.position) {
       this.suspicion.copy(src.position);
@@ -389,7 +400,10 @@ export class SisterAI {
     let wantYaw = p.yaw;
     let wantPitch = p.pitch;
 
-    if (this.target && this.targetVisible) {
+    if (this._promptScan && this._scanTimer > 0 && !this._promptScan.locked) {
+      wantYaw = this._scanYaw;
+      wantPitch = 0;
+    } else if (this.target && this.targetVisible) {
       const point = this._aimPointFor(this.target, _probe);
       _dir.subVectors(point, this._eyePoint(this._eye));
       const dist = _dir.length() || 1e-4;
@@ -680,8 +694,13 @@ export class SisterAI {
    * carries on.
    */
   issueIntent(kind) {
-    const ttl = INTENT_TTL[kind];
+    this.promptStats.issued++;
+    const rushed = this._promptClock - this._lastPromptAt < 3;
+    this._lastPromptAt = this._promptClock;
+    this._rushed = rushed;
+    const ttl = INTENT_TTL[kind] * (rushed ? 0.5 : 1);
     if (!ttl) return this._feedback('没听懂这句话。', false);
+    if (!this.active || !this.player.alive) return this._feedback('等我拿稳手机再说。', false);
 
     if (kind === 'COVER' && !this.target && !this.hasSuspicion) {
       return this._feedback('没看到敌人，先别躲。', false);
@@ -689,13 +708,24 @@ export class SisterAI {
     if (kind === 'ADVANCE' && this.state === SISTER_STATE.RELOAD) {
       return this._feedback('正在换弹，等一下。', false);
     }
-    if (kind === 'LOOK_LEFT' || kind === 'LOOK_RIGHT') {
+    if (kind === 'HOLD' && (!this.hasSuspicion || !this.isExposedAhead())) {
+      return this._feedback('这里还好，先走着。', false);
+    }
+    if (kind === 'LOOK_BACK' && !this.perceivedBehind()) {
+      return this._feedback('后面没听到动静。', false);
+    }
+    if (kind === 'LOOK_LEFT' || kind === 'LOOK_RIGHT' || kind === 'LOOK_BACK') {
       // Turning to look is something a body can do; seeing through the wall it
       // turns toward is not. The scan only changes where she is facing.
-      this._scanYaw = this.player.yaw + (kind === 'LOOK_LEFT' ? 0.9 : -0.9);
+      const side = kind === 'LOOK_LEFT' ? 1 : kind === 'LOOK_RIGHT' ? -1 : 0;
+      this._promptScan = { kind, yaw: this.player.yaw, side, locked: null, found: false };
+      if (this.targetVisible && this.target && this._inScanDirection(this.target.position)) {
+        this._promptScan.locked = this.target;
+      }
+      this._scanYaw = this.player.yaw + (side ? side * 0.9 : Math.PI);
       this._scanTimer = ttl;
       this.intent = { kind, ttl };
-      return this._feedback(kind === 'LOOK_LEFT' ? '好，我看左边。' : '好，我看右边。', true);
+      return this._feedback(kind === 'LOOK_LEFT' ? '好，我看左边。' : kind === 'LOOK_RIGHT' ? '好，我看右边。' : '好，我看后面。', true);
     }
 
     if (kind === 'RELOAD') {
@@ -707,11 +737,16 @@ export class SisterAI {
       // by `endFrame` before anything reads it. The intent is picked up on the
       // next simulation step, where the press is guaranteed to be seen.
       this.intent = { kind, ttl };
+      this._reloadReport = { ammo: w.ammo, started: false, ttl: 5 };
       return this._feedback('好，换弹。', true);
     }
 
     this.intent = { kind, ttl };
-    if (kind === 'COVER') return this._feedback('好，找掩体。', true);
+    if (kind === 'COVER') {
+      this._coverReport = { ttl: 3, quiet: 0, low: this.player.health / this.player.maxHealth < 0.3,
+        threatened: this.targetVisible || (this.hasSuspicion && this.suspicionTime < 3) };
+      return this._feedback('好，找掩体。', true);
+    }
     if (kind === 'ADVANCE') {
       this.path.length = 0;
       this.repathTimer = 0;
@@ -727,9 +762,104 @@ export class SisterAI {
     if (this.intent.ttl <= 0) this.intent = null;
   }
 
-  _feedback(text, ok) {
-    this.onFeedback?.(text, ok);
+  _feedback(text, ok, { complete = false, important = false, savedHer = false } = {}) {
+    if (!complete) {
+      this.promptStats[ok ? 'accepted' : 'refused']++;
+      if (this._rushed) text = '慢点说。' + text;
+    }
+    this.onFeedback?.(text, ok, { complete, important, savedHer });
     return { ok, text };
+  }
+
+  resetPrompts() {
+    this.intent = null;
+    this._scanTimer = 0;
+    this.promptStats = { issued: 0, accepted: 0, refused: 0, savedHer: 0 };
+    this._promptClock = 0;
+    this._lastPromptAt = -Infinity;
+    this._rushed = false;
+    this._promptScan = null;
+    this._coverReport = null;
+    this._reloadReport = null;
+    this._lastReloadReply = -Infinity;
+    this._lastHitAt = -Infinity;
+  }
+
+  _inScanDirection(point) {
+    const scan = this._promptScan;
+    if (!scan) return false;
+    const angle = wrapAngle(yawTo(point.x - this.player.position.x, point.z - this.player.position.z) - scan.yaw);
+    return scan.side ? angle * scan.side > 0.15 && angle * scan.side < 2.4 : Math.abs(angle) > 2.1;
+  }
+
+  _updatePromptReports(dt) {
+    const scan = this._promptScan;
+    if (scan) {
+      if (this.targetVisible && this.target && this._inScanDirection(this.target.position)) scan.found = true;
+      if (this.hasSuspicion && this.suspicionTime < 3 && this._inScanDirection(this.suspicion)) scan.found = true;
+      if (this._scanTimer <= 0) {
+        const side = scan.kind === 'LOOK_LEFT' ? '左边' : scan.kind === 'LOOK_RIGHT' ? '右边' : '后面';
+        const known = scan.locked && this.target === scan.locked && this.targetVisible;
+        this._feedback(known ? '我早看见了。' : scan.found ? '真有，交给我。' : `${side}没人啊。`, true,
+          { complete: true, important: !!scan.found && !known });
+        this._promptScan = null;
+      }
+    }
+    const cover = this._coverReport;
+    if (cover) {
+      cover.ttl -= dt;
+      const recentHit = this._promptClock - this._lastHitAt < 0.6;
+      cover.quiet = !this.targetVisible && !recentHit ? cover.quiet + dt : 0;
+      if (this.player.alive && cover.threatened && cover.ttl >= 0 && cover.quiet >= 0.6) {
+        if (cover.low) this.promptStats.savedHer++;
+        this._feedback('躲对了。', true, { complete: true, important: true, savedHer: cover.low });
+        this._coverReport = null;
+      } else if (cover.ttl <= 0 || !this.player.alive) this._coverReport = null;
+    }
+    const reload = this._reloadReport;
+    if (reload) {
+      reload.ttl -= dt;
+      reload.started ||= this.weapon.reloading;
+      if (reload.started && !this.weapon.reloading && this.weapon.ammo > reload.ammo) {
+        if (this._promptClock - this._lastReloadReply > 8) {
+          this._feedback('换好了。', true, { complete: true });
+          this._lastReloadReply = this._promptClock;
+        }
+        this._reloadReport = null;
+      } else if (reload.ttl <= 0) this._reloadReport = null;
+    }
+  }
+
+  // She also watches during his turn, using the same eyes and damage cues.
+  observe(dt) {
+    this._promptClock += dt;
+    if (!this.player.alive) { this.target = null; this.targetVisible = false; this.hasSuspicion = false; return; }
+    this._readDamage();
+    this._sense(dt);
+  }
+
+  perceivedBehind() {
+    const point = this.targetVisible && this.target ? this.target.position
+      : this.hasSuspicion && this.suspicionTime < 3 ? this.suspicion : null;
+    if (!point) return false;
+    const angle = wrapAngle(yawTo(point.x - this.player.position.x, point.z - this.player.position.z) - this.player.yaw);
+    return Math.abs(angle) > 2.1;
+  }
+
+  isExposedAhead() {
+    const p = this.player;
+    const x = p.position.x - Math.sin(p.yaw) * 3;
+    const z = p.position.z - Math.cos(p.yaw) * 3;
+    return this._wantsMove && this.nav.isWalkableAt(x, z)
+      && !this.world.bvh.raycast(this._eyePoint(this._eye), _probe.set(-Math.sin(p.yaw), 0, -Math.cos(p.yaw)), 6, this._hit).hit;
+  }
+
+  contextualPrompt() {
+    if (!this.player.alive) return null;
+    if (this.perceivedBehind()) return { kind: 'LOOK_BACK', label: '后面！' };
+    if (this.player.health / this.player.maxHealth < 0.3) return { kind: 'COVER', label: '回来！' };
+    if (this.hasSuspicion && this.suspicionTime < 3 && this.isExposedAhead()) return { kind: 'HOLD', label: '停！' };
+    return null;
   }
 
   // -------------------------------------------------------------------- report

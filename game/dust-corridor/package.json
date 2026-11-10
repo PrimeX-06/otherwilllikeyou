@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview --port 4319 --strictPort",
     "test": "playwright test",
+    "test:act1": "node --test tests/act1.unit.mjs",
     "test:install": "playwright install chromium",
     "profile": "playwright test tests/performance.spec.js --reporter=list"
   },

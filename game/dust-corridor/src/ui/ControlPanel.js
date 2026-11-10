@@ -15,7 +15,7 @@ import './control.css';
  * the crosshair and the bottom corners where the game's own readouts live.
  */
 
-const PROMPTS = [
+export const PROMPTS = [
   { kind: 'LOOK_LEFT', label: '左边有人' },
   { kind: 'LOOK_RIGHT', label: '右边有人' },
   { kind: 'COVER', label: '先躲一下' },
@@ -28,6 +28,8 @@ const FEEDBACK_LIFE = 3.4;
 export class ControlPanel {
   constructor(root, { onPrompt } = {}) {
     this.onPrompt = onPrompt;
+    this.context = null;
+    this.visible = false;
 
     this.el = document.createElement('div');
     this.el.id = 'control-panel';
@@ -42,14 +44,14 @@ export class ControlPanel {
       needClick: q('#cp-need-click')
     };
 
-    for (const prompt of PROMPTS) {
+    for (const [index, prompt] of [...PROMPTS, { kind: '', label: '留意周围' }].entries()) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'cp-chip';
       button.dataset.kind = prompt.kind;
-      button.textContent = prompt.label;
+      button.innerHTML = `<span>${prompt.label}</span><kbd>${index + 1}</kbd>`;
       button.addEventListener('click', () => {
-        this.onPrompt?.(prompt.kind);
+        this.activate(index);
         button.blur();
       });
       this.dom.prompts.appendChild(button);
@@ -63,6 +65,7 @@ export class ControlPanel {
   }
 
   setVisible(visible) {
+    this.visible = !!visible;
     this.el.classList.toggle('show', !!visible);
   }
 
@@ -76,8 +79,40 @@ export class ControlPanel {
     this.mode = mode;
     const ai = mode === 'SISTER_AI';
     this.el.classList.toggle('ai', ai);
-    for (const chip of this.chips) chip.disabled = !ai;
+    for (const [index, chip] of this.chips.entries()) chip.disabled = !ai || (index === 5 && !this.context);
     this.dom.prompts.classList.toggle('muted', !ai);
+  }
+
+  setContext(prompt) {
+    if ((prompt?.kind ?? null) === (this.context?.kind ?? null)
+      && (prompt?.label ?? null) === (this.context?.label ?? null)) return;
+    this.context = prompt;
+    const chip = this.chips[5];
+    chip.dataset.kind = prompt?.kind ?? '';
+    chip.querySelector('span').textContent = prompt?.label ?? '留意周围';
+    chip.disabled = this.mode !== 'SISTER_AI' || !prompt;
+    chip.classList.toggle('contextual', !!prompt);
+  }
+
+  activate(index) {
+    const chip = this.chips[index];
+    if (!this.visible || !chip || chip.disabled) return false;
+    this.onPrompt?.(chip.dataset.kind, chip.querySelector('span').textContent);
+    return true;
+  }
+
+  handleKey(code) {
+    const match = /^Digit([1-6])$/.exec(code);
+    return !!match && this.activate(Number(match[1]) - 1);
+  }
+
+  flash(kind, label) {
+    const chip = this.chips.find((item) => item.dataset.kind === kind) ?? this.chips[5];
+    if (chip === this.chips[5]) chip.querySelector('span').textContent = label;
+    this._flashChip?.classList.remove('calling');
+    chip.classList.add('calling');
+    this._flashChip = chip;
+    this._flashTimer = 1.5;
   }
 
   /** What she said back. Cleared on its own so it never becomes wallpaper. */
@@ -103,6 +138,10 @@ export class ControlPanel {
   }
 
   update(dt) {
+    if (this._flashTimer > 0) {
+      this._flashTimer -= dt;
+      if (this._flashTimer <= 0) this._flashChip?.classList.remove('calling');
+    }
     if (this._feedbackTimer <= 0) return;
     this._feedbackTimer -= dt;
     if (this._feedbackTimer <= 0) this.dom.feedback.classList.remove('show');

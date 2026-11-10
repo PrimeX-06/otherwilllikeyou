@@ -81,6 +81,14 @@
     transition: opacity .18s ease;
   }
   .prompt.show { opacity: 1; }
+  #choices { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  #choices:empty { display: none; }
+  #choices button {
+    pointer-events: auto;
+    font: inherit; color: #f5dfc8; border: 1px solid #836653;
+    background: #241b20; padding: 6px 12px; cursor: pointer;
+  }
+  #choices button.selected { border-color: #edc39b; background: #493328; }
   .prompt kbd {
     display: inline-block;
     padding: 0 5px;
@@ -390,7 +398,7 @@
 
   // scenes 04–06: the shooting segment, framed by this page
   const GAME_SRC = "game/dust-corridor/dist/index.html?embed=1";
-  const gameEmbed = { active: false, ready: false, result: false, failed: false, timer: 0 };
+  const gameEmbed = { active: false, ready: false, result: false, payload: null, failed: false, timer: 0 };
 
   // Act 2 onward runs in this frame, inside Act 1's page, so the whole school
   // arc from the corridor to the railing is one uninterrupted flow.
@@ -484,7 +492,19 @@
     active: false, introT: -1, doneT: 0, seatBoy: false,
     boy: bedWalker("boy"), girl: bedWalker("girl"),
   };
+  const room = { seated: false, firstControl: "sister", seen: new Set(), snack: null };
+  const corridor = { visits301: 0, stopped: false, lookedBack: null };
+  const ROOM_HOTSPOTS = [
+    { id: "tv", label: "看电视", x: 418, y: 150, radius: 36 },
+    { id: "desk", label: "看书桌", x: 405, y: 235, radius: 36 },
+    { id: "snack", label: "看床头的零食", x: 177, y: 132, radius: 27 },
+    { id: "seat", label: "坐到床边", x: 185, y: 185, radius: 30 }
+  ];
   let phoneAlpha = 1;  // her phone only exists once she is on the bed
+  let choice = null;
+  const choicesEl = document.createElement("div");
+  choicesEl.id = "choices";
+  dialogEl.appendChild(choicesEl);
 
   // the closing transition: the camera dollies in on the phone in her lap,
   // then the lens rolls a quarter turn and falls through the lit screen —
@@ -531,6 +551,11 @@
   function near301() {
     return player.x > 72 && player.x < 216 && player.y < 226;
   }
+  function nearStairs() { return player.x > 420 && player.y >= 206 && player.y < 252; }
+  function roomHotspot() {
+    if (room.seated) return ROOM_HOTSPOTS[3];
+    return ROOM_HOTSPOTS.find((spot) => Math.hypot(bedWalk.boy.x - spot.x, bedWalk.boy.y - spot.y) < spot.radius);
+  }
   function blocked(x, y) {
     // the stairwell is a wall opening; the floor in front of it is still walkable
     if (x > 444 && y < 206) return true;
@@ -538,6 +563,8 @@
   }
 
   function say(who, text, opts = {}) {
+    choice = null;
+    choicesEl.replaceChildren();
     dialogue = {
       who, text, shown: 0, timer: 0,
       speed: opts.speed || 34,
@@ -553,6 +580,33 @@
     save.dialogOpen = true;
   }
 
+  function sayChoice(who, text, options) {
+    const pending = { options, selected: 0 };
+    say(who, text, { onDone: () => options[pending.selected].run() });
+    choice = pending;
+    for (const [index, option] of options.entries()) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${index + 1} ${option.text}`;
+      button.classList.toggle("selected", index === 0);
+      button.addEventListener("click", () => choose(index));
+      choicesEl.appendChild(button);
+    }
+  }
+
+  function selectChoice(index) {
+    if (!choice || index < 0 || index >= choice.options.length) return;
+    choice.selected = index;
+    [...choicesEl.children].forEach((button, i) => button.classList.toggle("selected", i === index));
+  }
+
+  function choose(index) {
+    if (!choice || !dialogue) return;
+    selectChoice(index);
+    dialogue.shown = dialogue.text.length;
+    advanceDialog();
+  }
+
   function advanceDialog() {
     if (!dialogue) return;
     if (dialogue.shown < dialogue.text.length) {
@@ -566,6 +620,8 @@
       dialogue = null;
       dialogEl.classList.remove("show");
       save.dialogOpen = false;
+      choice = null;
+      choicesEl.replaceChildren();
       fn();
     } else {
       dialogue = null;
@@ -622,6 +678,7 @@
   }
 
   function startBedWalk() {
+    room.seated = false;
     bedWalk.active = true;
     bedWalk.introT = -1;
     bedWalk.doneT = 0;
@@ -700,7 +757,8 @@
       bedWalk.introT -= dt;
       if (bedWalk.introT <= 0) { bedWalk.introT = 0; bedroomIntro(); }
     }
-    if (bedWalk.boy.mode === "sit" && bedWalk.girl.mode === "sit") {
+    if (bedWalk.girl.mode === "sit" && bedWalk.introT === 0
+      && (bedWalk.boy.mode === "sit" || (bedWalk.boy.mode === "stand" && !save.dialogOpen))) {
       bedWalk.doneT += dt;
       if (bedWalk.doneT > 0.15) bedWalk.active = false;
     }
@@ -708,11 +766,49 @@
 
   function bedroomIntro() {
     startGirlSlide();
-    // he climbs up as she makes room, so the line lands on a settled picture
-    seatBoy();
+    bedWalk.boy.mode = "stand";
+    bedWalk.boy.x = 185;
+    bedWalk.boy.y = 175;
+    bedWalk.boy.moving = false;
+    bedWalk.girl.mode = "sit";
+    room.seated = false;
+    goalEl.textContent = "WASD 移动 · E 看一看 / 坐下";
     say("旁白", "（她拍了拍床沿。）", {
       onDone: () => say("朱里", "「坐这儿吧。」", { hold: 0 })
     });
+  }
+
+  function inspectRoom(spot) {
+    room.seen.add(spot.id);
+    if (spot.id === "tv") {
+      say("旁白", "（电视里的人追着一辆车跑，配音比脚步声还响。）", {
+        onDone: () => say("朱里", "「每天都追不上，还每天播。」")
+      });
+    } else if (spot.id === "desk") {
+      say("旁白", "（课本摊在书桌上，练习册写到一半，旁边压着一根没盖好的笔。）", {
+        onDone: () => say("朱里", "「别翻啊，我等会儿还得写。」")
+      });
+    } else if (spot.id === "snack") {
+      sayChoice("朱里", "「床头还有点零食，你吃吗？」", [
+        { text: "吃一点", run: () => { room.snack = true; say("朱里", "「给我留点，别一口吃完。」"); } },
+        { text: "先不吃", run: () => { room.snack = false; say("朱里", "「那先放着，想吃自己拿。」"); } }
+      ]);
+    } else {
+      room.seated = true;
+      bedWalk.boy.mode = "sit";
+      bedWalk.boy.x = BED_FEET.boy.x;
+      bedWalk.boy.y = BED_FEET.boy.y;
+      bedWalk.boy.moving = false;
+      sayChoice("朱里", "「你看着，还是你先打？」", [
+        { text: "先看她打", run: () => beginPhone("sister") },
+        { text: "先自己打", run: () => beginPhone("player") }
+      ]);
+    }
+  }
+
+  function beginPhone(firstControl) {
+    room.firstControl = firstControl;
+    say("朱里", "「小声点，我妈在隔壁。」", { onDone: () => startPhoneShot() });
   }
 
   function startOpening() {
@@ -724,6 +820,7 @@
   }
 
   function startPhoneShot() {
+    room.seated = true;
     phoneShot.active = true;
     phoneShot.t = 0;
     phoneShot.ease = 0;
@@ -825,6 +922,7 @@
     gameEmbed.active = true;
     gameEmbed.ready = false;
     gameEmbed.result = false;
+    gameEmbed.payload = null;
     gameEmbed.failed = false;
     gameNoteEl.textContent = "正在打开手机里的游戏…";
     gameHostEl.classList.remove("ready", "hide", "ended");
@@ -918,7 +1016,7 @@
       if (!gameEmbed.active || gameEmbed.ready) return;
       gameEmbed.ready = true;
       try {
-        gameFrameEl.contentWindow?.postMessage({ source: "phone-story", type: "start" }, "*");
+        gameFrameEl.contentWindow?.postMessage({ source: "phone-story", type: "start", firstControl: room.firstControl }, "*");
         gameFrameEl.focus();
       } catch (err) {
         // ignored: the frame is on its own from here
@@ -940,6 +1038,7 @@
     } else if (d.type === "result") {
       if (!gameEmbed.active) return;
       gameEmbed.result = true;
+      gameEmbed.payload = d.result && typeof d.result === "object" ? d.result : null;
       // No act card here: the phone going dark is the middle of scene 06. The
       // card belongs at the end of the walk home, not over a frozen firefight.
       gameNoteEl.textContent = "E 起身";
@@ -1000,6 +1099,7 @@
       }
     } else {
       promptTextEl.textContent = "敲 302 的门";
+      goalEl.textContent = "302 的门就在走廊那头";
     }
   }
 
@@ -1093,9 +1193,22 @@
     keys.clear();
     fadeIn = 1;
     promptEl.classList.remove("show");
-    say("旁白", "（你把手机还给她，替她带上了门。）", {
-      onDone: () => say("旁白", "（走廊里比刚才暗了。回家吧。）", {})
-    });
+    const result = gameEmbed.payload;
+    const lines = [];
+    if (result) {
+      if (result.prompts?.savedHer > 0) lines.push({ who: "朱里", text: "「刚才那声提醒，倒是帮上忙了。下次还喊你。」" });
+      else if (result.playerKills >= 3 && result.playerKills > result.playerDeaths) lines.push({ who: "朱里", text: "「打得还行嘛，下次接着来。」" });
+      else if (result.playerDeaths > result.playerKills) lines.push({ who: "朱里", text: "「下次少往中间冲，听见没？」" });
+      else if (result.prompts?.accepted > result.prompts?.refused && result.prompts?.accepted > 0) lines.push({ who: "朱里", text: "「你在旁边看着，喊得还挺准。」" });
+      else if (result.prompts?.refused > result.prompts?.accepted) lines.push({ who: "朱里", text: "「下次一句一句喊，我听得见。」" });
+      else if (result.winner === "A") lines.push({ who: "朱里", text: "「这局赢了，下次也来。」" });
+      else if (result.winner === "B") lines.push({ who: "朱里", text: "「下次再把这局打回来。」" });
+      else lines.push({ who: "旁白", text: "（这一局没分出胜负。她说下次接着打。）" });
+    }
+    lines.push({ who: "旁白", text: "（走廊里比刚才暗了。回家吧。）" });
+    const next = () => { const line = lines.shift(); if (line) say(line.who, line.text, { onDone: lines.length ? next : null }); };
+    say("旁白", "（你把手机还给她，替她带上了门。）", { onDone: next });
+    gameEmbed.payload = null;
   }
 
   function finishAct() {
@@ -1126,7 +1239,7 @@
     "游戏素材复用了一个开源射击游戏，",
     "因为我们当时玩的就是pubg的中国授权移动版",
   ].join("\n");
-  const epilogue = { active: false, done: false, t: 0, shown: 0, times: [] };
+  const epilogue = { active: false, done: false, t: 0, shown: 0, times: [], text: EPILOGUE_TEXT };
 
   function startEpilogue() {
     if (epilogue.active) return;
@@ -1135,10 +1248,13 @@
     epilogue.t = 0;
     epilogue.shown = 0;
     epilogue.times = [];
+    epilogue.text = EPILOGUE_TEXT + (corridor.lookedBack === true
+      ? "\n那天回家前，我又回头看了一眼302的门。"
+      : corridor.lookedBack === false ? "\n那天我直接回了家，走廊里的声音还留在耳边。" : "");
     // the first character waits for the black to settle, and each comma buys
     // a breath — the note is read, not overheard
     let at = 0.9;
-    for (const ch of EPILOGUE_TEXT) {
+    for (const ch of epilogue.text) {
       epilogue.times.push(at);
       at += 1 / 17;
       if (ch === "，") at += 0.22;
@@ -1146,7 +1262,7 @@
       else if (ch === "。") at += 0.4;
       else if (ch === "\n") at += 0.3;
     }
-    epiGhostEl.textContent = EPILOGUE_TEXT;
+    epiGhostEl.textContent = epilogue.text;
     epiEl.textContent = "";
     endcardEl.classList.remove("hide", "done");
     endcardEl.classList.add("show", "typing");
@@ -1155,8 +1271,8 @@
   function finishEpilogue() {
     if (!epilogue.active || epilogue.done) return;
     epilogue.done = true;
-    epilogue.shown = EPILOGUE_TEXT.length;
-    epiEl.textContent = EPILOGUE_TEXT;
+    epilogue.shown = epilogue.text.length;
+    epiEl.textContent = epilogue.text;
     endcardEl.classList.add("done");
   }
 
@@ -1169,12 +1285,22 @@
     }
     if (n !== epilogue.shown) {
       epilogue.shown = n;
-      epiEl.textContent = EPILOGUE_TEXT.slice(0, n);
+      epiEl.textContent = epilogue.text.slice(0, n);
     }
     if (n >= epilogue.times.length) finishEpilogue();
   }
 
   function restartAct() {
+    room.seated = false;
+    room.firstControl = "sister";
+    room.seen.clear();
+    room.snack = null;
+    corridor.visits301 = 0;
+    corridor.stopped = false;
+    corridor.lookedBack = null;
+    gameEmbed.payload = null;
+    choice = null;
+    choicesEl.replaceChildren();
     fadeOut = 0;
     bedWalk.active = false;
     phoneAlpha = 1;
@@ -1223,6 +1349,12 @@
             say("旁白", "（第一幕到这里。）", { onDone: () => finishAct() });
           }
         });
+      } else if (nearStairs() && !corridor.stopped) {
+        corridor.stopped = true;
+        sayChoice("旁白", "（到了楼梯口，302的门还在身后。）", [
+          { text: "回头看一眼", run: () => { corridor.lookedBack = true; say("旁白", "（门已经关上，电视声隔着走廊传过来。）"); } },
+          { text: "直接回家", run: () => { corridor.lookedBack = false; say("旁白", "（你收回脚步，往301走去。）"); } }
+        ]);
       } else {
         say("旁白", "（301 在走廊那头。）", {});
       }
@@ -1230,10 +1362,8 @@
     }
     if (sceneState.name === "bedroom") {
       if (bedWalk.active) return;
-      say("朱里", "「小声点，我妈在隔壁。」", {
-        hold: 0,
-        onDone: () => startPhoneShot(),
-      });
+      const spot = roomHotspot();
+      if (spot) inspectRoom(spot);
       return;
     }
     if (nearDoor()) {
@@ -1242,7 +1372,9 @@
       return;
     }
     if (near301()) {
-      say("旁白", "301 的门关着。门缝里没有光。", {});
+      corridor.visits301++;
+      say("旁白", corridor.visits301 === 1 ? "301 的门关着。门缝里没有光。"
+        : "（门里电视声换成了广告，刚才那句对白听不见了。）", {});
     }
   }
 
@@ -1302,6 +1434,16 @@
     }
 
     if (sceneState.name === "bedroom") {
+      if (!bedWalk.active && !room.seated) {
+        const a = bedWalk.boy;
+        const dx = Number(keys.has("d") || keys.has("arrowright")) - Number(keys.has("a") || keys.has("arrowleft"));
+        const dy = Number(keys.has("s") || keys.has("arrowdown")) - Number(keys.has("w") || keys.has("arrowup"));
+        const len = Math.hypot(dx, dy) || 1;
+        a.moving = !!(dx || dy);
+        a.x = clamp(a.x + dx / len * 64 * dt, 166, 425);
+        a.y = clamp(a.y + dy / len * 64 * dt, 132, 260);
+        if (a.moving) { a.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down"); a.anim += dt; a.frame = Math.floor(a.anim * 8) % 4; }
+      }
       player.moving = false;
       return;
     }
@@ -1408,7 +1550,8 @@
 
     // "what now?" hint before the door is knocked
     goalEl.classList.toggle("show",
-      !cine.active && sceneState.name === "corridor" && !save.hasSave && !door.opened);
+      !cine.active && ((sceneState.name === "corridor" && !save.hasSave && !door.opened)
+        || (sceneState.name === "bedroom" && !room.seated)));
 
     if (cine.active) { drawCine(); return; }
 
@@ -1426,7 +1569,7 @@
       ctx.drawImage(img.bedroom, 0, 0);
       // the two sit on the bed's edge, one behind the other along the bed,
       // both facing the room — unless they are still walking in
-      if (bedWalk.active) {
+      if (bedWalk.active || !room.seated) {
         drawBedActors();
       } else {
         drawFrame("boy", BOY.sit_right[0], 118, 88);
@@ -1476,8 +1619,9 @@
         ctx.fillRect(0, 0, W, H);
       }
       const noDialog = !save.dialogOpen && !bedWalk.active;
-      promptEl.classList.toggle("show", noDialog);
-      if (noDialog) promptTextEl.textContent = "看手机";
+      const spot = roomHotspot();
+      promptEl.classList.toggle("show", noDialog && !!spot);
+      if (noDialog && spot) promptTextEl.textContent = spot.label;
       return;
     }
 
@@ -1532,11 +1676,12 @@
 
     // interaction prompt
     const home = sceneState.returning && near301();
-    const near = (sceneState.returning ? home : nearDoor()) && !save.dialogOpen;
+    const stairs = sceneState.returning && nearStairs() && !corridor.stopped;
+    const near = (sceneState.returning ? home || stairs : nearDoor() || near301()) && !save.dialogOpen;
     promptEl.classList.toggle("show", near);
     if (near) promptTextEl.textContent = sceneState.returning
-      ? "回家"
-      : (door.opened ? "进去" : "敲 302 的门");
+      ? (stairs ? "在楼梯口停一会儿" : "回家")
+      : (near301() ? "听听 301 的动静" : door.opened ? "进去" : "敲 302 的门");
 
     if (debug) {
       ctx.save();
@@ -1622,6 +1767,13 @@
       return;
     }
     if (paused) return;
+    if (choice) {
+      if (e.repeat) return;
+      if (k === "1" || k === "2") { e.preventDefault(); choose(Number(k) - 1); return; }
+      if (["arrowleft", "arrowright", "arrowup", "arrowdown"].includes(k)) {
+        e.preventDefault(); selectChoice(choice.selected === 0 ? 1 : 0); return;
+      }
+    }
     if (cine.active) return;
     if (phoneShot.active) {
       if (phoneShot.done && (k === "e" || k === "enter")) exitPhoneShot();
@@ -1630,10 +1782,7 @@
     if (k === "e" || k === "enter") { interact(); return; }
     if (sceneState.done && k === "r") { restartAct(); return; }
     if (k === "r") {
-      player.x = PLAYER_START.x; player.y = PLAYER_START.y; player.dir = "up";
-      door.state = 0; door.opened = false; save.hasSave = false; save.event = 0;
-      girl.visible = false; dialogue = null; save.dialogOpen = false;
-      dialogEl.classList.remove("show"); promptEl.classList.remove("show");
+      restartAct();
       return;
     }
     if (k === "f2") { debug = !debug; debugEl.classList.toggle("show", debug); return; }
@@ -1663,6 +1812,7 @@
   loadAll().then(() => {
     loadingEl.remove();
     const q = new URLSearchParams(location.search);
+    room.firstControl = q.get("first") === "player" ? "player" : "sister";
     if (q.has("player")) {
       const [px, py] = q.get("player").split(",").map(Number);
       if (Number.isFinite(px)) player.x = px;
@@ -1697,6 +1847,7 @@
     window.__game = {
       player, girl, door, save, say, setDoor, startDoorEvent,
       embed: gameEmbed, startGameEmbed, endGameEmbed,
+      room, corridor, bedWalk, interact, advanceDialog, beginReturn, restartAct,
       story: storyEmbed, startStoryFlow,
       state: () => ({
         scene: sceneState.name, girlY, girlSlideT: girlSlide.t,
@@ -1715,7 +1866,7 @@
         },
         returning: sceneState.returning,
         done: sceneState.done,
-        epilogue: { active: epilogue.active, done: epilogue.done, shown: epilogue.shown, len: EPILOGUE_TEXT.length },
+        epilogue: { active: epilogue.active, done: epilogue.done, shown: epilogue.shown, len: epilogue.text.length },
         fade: +fadeOut.toFixed(2),
         line: dialogue ? dialogue.text : null
       }),
